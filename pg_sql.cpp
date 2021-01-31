@@ -15,24 +15,29 @@
 #include <utility>
 #include <thread>
 #include <chrono>
-#include "db/db_table_class_list.h"
+
+#include "config/AppConfigControl.h"
 #include "control/CommandControl.h"
 #include "control/consoleinterface.h"
 #include "thread/ThreadTest.h"
 
+//extern std::shared_ptr<control::History> history;
 
 using namespace threads;
+
+
 
 int main(int argc, char *argv[]) {
 
 	threads::ThreadTest thread_test;
+	config::DbAppConfig db_config;
 
-	control::CommandControl control;
-	std::shared_ptr<pqxx::connection> db_connect; // = nullptr;
+	std::shared_ptr<control::CommandControl> control = std::make_shared<control::CommandControl>();
 	int ret_code = 0;
+	std::string parms = db_config.getConfigLine();// "dbname = messagedb user = postgres password = 12345678 hostaddr = 127.0.0.1 port = 5432";
 	try {
-		db_connect = std::make_shared<pqxx::connection>(
-						"dbname = messagedb user = postgres password = 12345678 hostaddr = 127.0.0.1 port = 5432");
+		db::PgConnection connector(parms);
+		std::shared_ptr<pqxx::connection> db_connect = connector.getConnection();
 		if (db_connect->is_open()) {
 			std::cout << "Opened database successfully: " << db_connect->dbname() << std::endl;
 			std::cout << "              server version: " << db_connect->server_version()
@@ -43,40 +48,53 @@ int main(int argc, char *argv[]) {
 			std::cout << "Can't open database" << std::endl;
 			ret_code = 1;
 		}
-		db::TabelControl db_control(db_connect);
+
+		init_db_control();
+
+		init_cmd_history(20);
 
 
-
+/*
 		std::thread t5(&threads::ThreadTest::start_thread, &thread_test); // t5 runs foo::bar() on object f
-//		std::thread t5((thread_test));
 		control::ptr_action_func run_cmd = std::make_shared<control::intercept_func> ([&](std::string& in){thread_test.resume();});
 		control::ptr_action_func stop_cmd = std::make_shared<control::intercept_func> ([&](std::string& in){thread_test.pause();});
 
-		control::ptr_action_func list_tables = std::make_shared<control::intercept_func> ([&db_control](std::string& in){
-			std::shared_ptr<db::db_tables_info> table_list = db_control.getTableInfo(false); // @suppress("Invalid template argument")
-			std::cout << "============= DB TABLES =============" << std::endl;
-			for (db::db_table_info elem : *table_list) // @suppress("Symbol is not resolved")
-				std::cout <<  elem.first << "." << elem.second << std::endl;
-			std::cout << "============= DB TABLES =============" << std::endl;
-		});
-
-		// std::function
-		control::ptr_action_func exit_cmd = std::make_shared<control::intercept_func> (exit_func);
-		control::ptr_action_func clear_cmd = std::make_shared<control::intercept_func> (clear_func);
-		control::ptr_action_func help_cmd = std::make_shared<control::intercept_func> (help_func);
-
-		control.RegisterOperation("^C", exit_cmd);
-		control.RegisterOperation("exit", exit_cmd);
-		control.RegisterOperation("clear", clear_cmd);
-		control.RegisterOperation("help", help_cmd);
-
 		control.RegisterOperation("resume", run_cmd);
 		control.RegisterOperation("pause", stop_cmd);
+*/
 
-		control.RegisterOperation("list_table", list_tables);
+		// std::function
+		control::ptr_action_func exit_cmd           = std::make_shared<control::intercept_func> (exit_func);
+		control::ptr_action_func clear_cmd          = std::make_shared<control::intercept_func> (clear_func);
+		control::ptr_action_func help_cmd           = std::make_shared<control::intercept_func> (help_func);
+		control::ptr_action_func db_list_cmd        = std::make_shared<control::intercept_func> (db_list_func);
+		control::ptr_action_func db_info_cmd        = std::make_shared<control::intercept_func> (db_info_func);
+		control::ptr_action_func db_select_cmd      = std::make_shared<control::intercept_func> (db_select_func);
+		control::ptr_action_func db_set_schema_cmd  = std::make_shared<control::intercept_func> (set_schema_func);
+		control::ptr_action_func history_cmd        = std::make_shared<control::intercept_func> (show_history);
+		control::ptr_action_func execute_sql_cmd    = std::make_shared<control::intercept_func> (execute_sql);
 
-		control.Start();
-//      pqxx::work
+		control::ptr_action_func config_operation_cmd    = std::make_shared<control::intercept_func> (config_operation);
+
+		control->RegisterHistory(get_history(), "history");
+
+		control->RegisterOperation("^C", exit_cmd);
+		control->RegisterOperation("exit", exit_cmd);
+		control->RegisterOperation("clear", clear_cmd);
+		control->RegisterOperation("help", help_cmd);
+
+
+		control->RegisterOperation("list", db_list_cmd);
+		control->RegisterOperation("info", db_info_cmd);
+		control->RegisterOperation("show", db_select_cmd);
+		control->RegisterOperation("schema", db_set_schema_cmd);
+		control->RegisterOperation("history", history_cmd);
+		control->RegisterOperation("sql", execute_sql_cmd);
+		control->RegisterOperation("config", config_operation_cmd);
+
+		control->RegisterDefault(execute_sql_cmd);
+
+		control->Start();
 	} catch (pqxx::sql_error const &e) {
 		std::cerr << "Database error: " << e.what() << std::endl
 				<< "Query was: " << e.query() << std::endl;
@@ -86,11 +104,7 @@ int main(int argc, char *argv[]) {
 		ret_code = -1;
 	}
 
-	control.Stop();
-
-	if (db_connect->is_open()) {
-		db_connect->disconnect();
-	}
+	control->Stop();
 	return ret_code;
 }
 #else

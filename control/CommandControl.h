@@ -12,6 +12,7 @@
 #include <map>
 #include <memory>
 #include <cstring>
+#include "History.h"
 
 namespace control {
 
@@ -55,12 +56,23 @@ namespace control {
 
 
 
+	class RunCmdInterface {
+		// Делаем класс History другом класса CommandControl
+		friend class History;
 
-	class CommandControl final {
+		virtual void run_cmd(std::string cmd_line, bool isHistory) = 0;
 	public:
-		CommandControl() {
+		virtual ~RunCmdInterface() {}
+	};
+
+
+
+
+	class CommandControl final : public RunCmdInterface,  std::enable_shared_from_this<RunCmdInterface>  {
+	public:
+		CommandControl(): default_func(nullptr), isStart(false) {
 			// TODO Auto-generated constructor stub
-			isStart = false;
+
 		}
 		virtual ~CommandControl() {
 			// TODO Auto-generated destructor stub
@@ -85,54 +97,92 @@ namespace control {
 		void Start(){
 			// TODO Auto-generated constructor stub
 			std::string cmd_line;
-			const std::string delimiter(" ");
 			isStart = true;
 			while (isStart) {
-				std::string token;
-				std::string command_string("");
+
+				if (std::cin.fail()) // если предыдущее извлечение было неудачным,
+				{
+				    std::cin.clear(); // то возвращаем cin в 'обычный' режим работы
+				    std::cin.ignore(32767,'\n'); // и удаляем значения предыдущего ввода из входного буфера
+				}
+
 				std::cout << "Read cmd>>";
 				std::getline(std::cin, cmd_line);
 				trim(cmd_line);
 
-				std::string::size_type first_pos = cmd_line.find(delimiter);
-				if (first_pos == std::string::npos) {
-					first_pos = cmd_line.size();
-				} else {
-					command_string = cmd_line.substr(first_pos + 1); // token is "scott"
+				if (!cmd_line.empty()) {
+					run_cmd(cmd_line, false);
 				}
 
-				token = cmd_line.substr(0, first_pos); // token is "scott"
-				std::cout << ">> Read cmd >> " << token << " >> " << command_string << std::endl;
-/*
-				 auto it = cmd_list.find(token.c_str());
-				  if (it != cmd_list.end()) {
-					  std::cout << "FOUND!!!!!" << std::endl;
-					  (*it->second)(command_string);
-				  }
-*/
-
-				for (const auto &pair : cmd_list) {
-					if (strcmp(pair.first,token.c_str()) == 0) {
-						(*pair.second)(command_string);
-						break;
-					}
-				}
 			}
 		}
 		void Stop(){
 			// TODO Auto-generated constructor stub
 			isStart = false;
 		}
-		int RegisterOperation(const char * Key, ptr_action_func &ptr_func){
+
+
+
+		void RegisterHistory(std::shared_ptr<History> new_history, std::string history_cmd ) {
+			this->history = new_history;
+			this->history_token = history_cmd;
+			std::shared_ptr<control::RunCmdInterface> pp = std::shared_ptr<control::RunCmdInterface>(this);
+			this->history->add_cmd_interface(pp); // shared_from_this()
+		}
+
+
+		void RegisterOperation(const char * Key, ptr_action_func &ptr_func){
 			// TODO Auto-generated constructor stub
 			cmd_list[Key] = ptr_func;
+		}
 
-			return 0;
+		void RegisterDefault(ptr_action_func &ptr_func){
+			default_func = ptr_func;
 		}
 
 	private:
+		std::string history_token;
+		std::shared_ptr<History> history;
+		ptr_action_func default_func;
 		action_list cmd_list;
 		bool isStart;
+
+
+		void run_cmd(std::string cmd_line, bool isHistory) {
+			std::string token;
+			std::string command_string;
+			const std::string delimiter(" ");
+
+			std::string::size_type first_pos = cmd_line.find(delimiter);
+			if (first_pos == std::string::npos) {
+				token = cmd_line;
+			} else {
+				command_string = cmd_line.substr(first_pos + 1); // token is "scott"
+				token = cmd_line.substr(0, first_pos); // token is "scott"
+			}
+
+			bool isDefault = true;
+			for (const auto &pair : cmd_list) {
+				if (strcmp(pair.first,token.c_str()) == 0) {
+					(*pair.second)(command_string);
+
+					isDefault = false;
+
+					if (!isHistory ) {
+						if (token.find(history_token) == std::string::npos) {
+							if (!history->addValue(cmd_line)){
+								std::cerr << "Error add command in History" << std::endl;
+							}
+						}
+					}
+					break;
+				}
+			}
+			if (isDefault && default_func) {
+				(*default_func)(cmd_line);
+			}
+		}
+
 	};
 
 } /* namespace control */
