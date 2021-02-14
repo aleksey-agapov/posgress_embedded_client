@@ -27,7 +27,7 @@ void History::ShowValue() {
 	show_list.showForm(std::move(history_report));
 }
 
-bool History::addValue(std::string &input) {
+bool History::addValue(std::string input) {
 	bool result_code = true;
 	try {
 		if (!isFound(input)) {
@@ -49,11 +49,6 @@ void History::runValue(int indexValue) {
 	} else {
 		std::cerr << "Error found command in History" << std::endl;
 	}
-/*
-	else {
-		throw new HistoryException("Can't take history value.");
-	}
-*/
 }
 
 void History::add_cmd_interface(std::shared_ptr<RunCmdInterface> new_cmd_interface)  {

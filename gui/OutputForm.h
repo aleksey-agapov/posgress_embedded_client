@@ -278,7 +278,7 @@ public:
 		style(new_style),
 		table_size(0){}
 
-	void showForm(std::unique_ptr<OutputForm> result) {
+	std::unique_ptr<OutputForm> showForm(std::unique_ptr<OutputForm> result) {
 		output.clear();
 		output << std::endl;
 		tableForm = std::move(result);
@@ -293,6 +293,7 @@ public:
 			}
 			showDownLine();
 		}
+		return std::move(tableForm);
 	}
 };
 

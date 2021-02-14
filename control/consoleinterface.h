@@ -6,7 +6,12 @@
  */
 
 #ifndef CONTROL_CONSOLEINTERFACE_H_
-#define CONTROL_CONSOLEINTERFACE_H_\
+#define CONTROL_CONSOLEINTERFACE_H_
+
+namespace control {
+	class About;
+}
+
 
 using namespace std;
 
@@ -15,13 +20,7 @@ using namespace std;
 #include "../db/selector.h"
 #include "../db/sqlexec.h"
 #include "History.h"
-
-/*
- * DELIMITERS for parse arg strings
- */
-#define DELIMITER " "
-#define OPTIONS_DELIMITER "|"
-
+#include "DefaultSchema.h"
 
 extern void exit_func(std::string& in);
 extern void clear_func (std::string& in);
@@ -35,10 +34,19 @@ extern void set_schema_func (std::string& in);
 extern std::shared_ptr<control::History> get_history();
 extern void init_cmd_history(int history_size);
 extern void show_history(std::string& in);
-
 extern void execute_sql (std::string& in);
 
 
+extern void init_config_control();
+extern std::shared_ptr<config::DbAppConfig> get_db_config_control();
 extern void config_operation (std::string& in);
+
+extern void init_default_control();
+extern void set_default(std::string& in);
+extern std::shared_ptr<control::DefaultSchema>get_set_default();
+
+
+extern void init_about_control(const char * title);
+extern std::shared_ptr<control::About> get_about_control();
 
 #endif /* CONTROL_CONSOLEINTERFACE_H_ */

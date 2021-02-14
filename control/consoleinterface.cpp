@@ -13,16 +13,94 @@
 #include <string>
 #include <memory>
 #include "consoleinterface.h"
-
+#include "CommandControl.h"
+#include "About.h"
+#include "../utils/apputils.h"
 
 
 std::shared_ptr<db::TabelControl> db_control;
 std::shared_ptr<control::History> history;
+std::shared_ptr<control::DefaultSchema> default_control;
+std::shared_ptr<config::DbAppConfig> db_config;
+std::shared_ptr<control::About> about_module;
+
+void init_about_control(const char * title){
+	about_module = std::make_shared<control::About> (title);
+}
 
 
+std::shared_ptr<control::About> get_about_control(){
+	return about_module;
+}
+
+// ////////////////////////////////////////////////////////////////
+
+void init_config_control(){
+	db_config = std::make_shared<config::DbAppConfig> ();
+}
 
 
-void config_operation (std::string& in){
+std::shared_ptr<config::DbAppConfig> get_db_config_control(){
+	return db_config;
+}
+/*
+ *
+ * save
+ * load
+ * show
+ * clear
+ */
+void config_operation (std::string& cmd_line){
+	const std::string delimiter( DELIMITER);
+	std::string command_string;
+	std::string command;
+	std::string::size_type first_pos = cmd_line.find(delimiter);
+	if (first_pos == std::string::npos) {
+		command = cmd_line;
+	} else {
+		command_string = cmd_line.substr(first_pos + 1); // token is "scott"
+		command = cmd_line.substr(0, first_pos); // token is "scott"
+	}
+
+	if (!command_string.empty()) {
+		if (command.compare("load") == 0) {
+			db_config->LoadNewConfig(command_string.c_str());
+		} else
+		if (command.compare("save") == 0) {
+			db_config->SaveConfig(command_string.c_str());
+		} else
+		/*
+		if (command.compare("select") == 0) {
+			const char * KeyName = command_string.c_str();
+			if (db_config->isContainModule(KeyName)) {
+				select_config_module = command_string;
+			}
+		} else
+
+		if (command.compare("show") == 0) {
+			const char * KeyName = command_string.c_str();
+			if (db_config->isContainModule(KeyName)) {
+				db_config->showTree(KeyName);
+			}
+		} else
+		*/
+		if (command.compare("edit") == 0) {
+			first_pos = command_string.find(delimiter);
+			if (first_pos != std::string::npos) {
+				std::string obj_value = command_string.substr(first_pos + 1); // token is "scott"
+				std::string obj_key   = command_string.substr(0, first_pos); // token is "scott"
+				db_config->setConfigLine(obj_key.c_str(), obj_value.c_str());
+			}
+		}
+	} else {
+		if (command.compare("clear") == 0) {
+			db_config->clear();
+		} else
+		if (command.compare("show") == 0) {
+			std::cout << *db_config->showTree() << std::endl;
+		}
+	}
+
 
 }
 
@@ -52,7 +130,7 @@ void db_info_func (std::string& in){
 	} else {
 		std::string schema;
 		std::string table_name;
-		std::string delimiter = DELIMITER;
+		const std::string delimiter( DELIMITER);
 
 		size_t pos = 0;
 		while ((pos = in.find(delimiter)) != std::string::npos) {
@@ -116,6 +194,28 @@ void db_select_func (std::string& in){
 }
 
 
+
+// /////////////////////////////////
+
+void set_default(std::string& in) {
+	utils::trim(in);
+	if (!default_control->setDefault(in)) {
+		std::cerr << "Error set new module:" << in << std::endl;
+	}
+}
+
+void init_default_control() {
+	default_control =  std::make_shared<control::DefaultSchema>();
+}
+
+std::shared_ptr<control::DefaultSchema>get_set_default() {
+	return default_control;
+}
+
+// /////////////////////////////////
+
+
+
 void init_cmd_history(int history_size) {
 	history = std::make_shared<control::History> (history_size);
 }
@@ -123,6 +223,8 @@ void init_cmd_history(int history_size) {
 std::shared_ptr<control::History> get_history() {
 	return history;
 }
+
+
 
 void show_history(std::string& in) {
 	if (is_number(in)) {
@@ -166,26 +268,15 @@ void clear_func (std::string& in) {
 
 void help_func (std::string& in) {
 	clear_func(in);
-	std::unique_ptr<gui::OutputForm> help(new gui::OutputForm());
-
-	help->setTitle("HELP");
-	help->add_column("command").add_column("description");
-
-	help->add_row({"clear","Clear screen"});
-	help->add_row({"help <option>","This help"});
-	help->add_row({"list","List operation"});
-	help->add_row({"",""});
-	help->add_row({"info","Info about db object"});
-	help->add_row({"<option>","<number> - number db object"});
-	help->add_row({"","<label> - label db object"});
-	help->add_row({"","<schema>.<label> - schema + label db object"});
-	help->add_row({"",""});
-	help->add_row({"schema","set default schema"});
-	help->add_row({"show","show data db object"});
-	help->add_row({"exit","Quit"});
-
-
-	gui::printer show_list(std::cout);
-	show_list.showForm(std::move(help));
+	about_module->printAbout(std::cout);
 }
 //} /* namespace control */
+
+
+
+
+
+
+
+
+

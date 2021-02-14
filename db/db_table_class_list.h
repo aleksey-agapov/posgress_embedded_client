@@ -95,10 +95,12 @@ class Log {
 /*
  * class PgConnection
  */
-class PgConnection : public config::IConfigCallBack{
+class PgConnection : public config::IConfigCallBack {   // , public std::enable_shared_from_this<config::IConfigCallBack>
 private:
 	Log log;
+	std::shared_ptr<config::DbAppConfig> db_config;
 	inline static std::shared_ptr<pqxx::connection> db_connect;
+
 	bool isReady() {
 		if (db_connect) {
 			if (!db_connect->is_open()) {
@@ -118,15 +120,32 @@ public:
 	}
 
 	PgConnection(std::string connect_parms): log("PgConnection"){
-		isReady();
-		db_connect = std::make_shared<pqxx::connection>(connect_parms);
-		if (!isReady())  throw invalid_argument("The argument not correct.");
+//		isReady();
+		try {
+			db_connect = std::make_shared<pqxx::connection>(connect_parms);
+		}
+		catch (...){}
+//		if (!isReady())  throw invalid_argument("The argument not correct.");
+	}
+
+	void setConfigControl(std::shared_ptr<config::DbAppConfig> db_config) {
+		this->db_config = db_config;
+		db_config->RegisterCallback(db_config->getModuleName(), std::shared_ptr<config::IConfigCallBack>(this));
 	}
 
 
 	void Update() {
+		isReady();
+		std::cout << "open database:" << db_config->getConfigLine() << std::endl;
+		db_connect = std::make_shared<pqxx::connection>(db_config->getConfigLine());
 
-
+		if (db_connect->is_open()) {
+			std::cout << "Opened database successfully: " << db_connect->dbname() << std::endl;
+			std::cout << "              server version: " << db_connect->server_version() << std::endl;
+			std::cout << "            protocol version: " << db_connect->protocol_version() << std::endl;
+		} else {
+			std::cerr << "Can't open database:" << db_config->getConfigLine() << std::endl;
+		}
 	}
 
 

@@ -22,7 +22,6 @@ class History {
 	std::deque<std::string>::size_type qhistory_size;
 	std::shared_ptr<RunCmdInterface> cmd_interface;
 
-
 	bool isFound(std::string& new_value);
 
 public:
@@ -36,7 +35,7 @@ public:
 	virtual ~History() {
 	}
 
-	bool addValue(std::string &input);
+	bool addValue(std::string input);
 
 	void runValue(int indexValue);
 
