@@ -33,10 +33,7 @@ using namespace std;
 
 namespace db {
 
-/*
-#define getBitBoolVal(Val) (Val)?true:false
-#define setBitBoolVal(Parm,Val) Parm=(Val)?1:0
-*/
+using ColumnType =  gui::OutputForm::ColumnType;
 
 class  Log;
 struct DbObject;
@@ -45,9 +42,6 @@ class  Table;
 class  RowInfo;
 class  ColumnInfo;
 class  selector;
-
-
-
 
 typedef std::shared_ptr<db::Table> FkTable;
 typedef std::vector<DbObject> db_tables_info; // @suppress("Invalid template argument")
@@ -61,6 +55,32 @@ typedef std::vector<ColumnInfo> HeaderInfo;
 extern std::optional<std::string> nl(std::string s);
 extern std::unique_ptr<gui::OutputForm> reportTablesList(std::shared_ptr<db_tables_info>    tables_info);
 extern std::unique_ptr<gui::OutputForm> reportTablesInfo(const db::HeaderInfo& tables_info);
+
+
+
+
+
+
+inline static ColumnType getType(pqxx::oid sql_type) {
+	ColumnType type_data = ColumnType::STRING;
+      switch (sql_type) {
+         case 23: type_data = ColumnType::NUM; break; // INTEGER
+         case 1700: case 701: type_data = ColumnType::NUM; break; // double
+         case 8: case 1042: case 1043: type_data = ColumnType::STRING; break; // c.type="std::string";
+         case 16: type_data = ColumnType::NUM;  break;   // "bool";
+         case 21: type_data = ColumnType::NUM;  break;  // "short"
+         case 20: type_data = ColumnType::NUM;  break;  // "long long"
+         // TODO these types are currently only returned as strings, should pick proper C++ types
+         case 17 /*bytea*/: case 1082 /*date*/: case 1083 /*time*/: case 1114 /*timestamp*/:
+         case 1186 /*interval*/: case 704 /*interval*/: case 114 /*JSON*/: case 705 /*Unknown*/:
+        	 type_data = ColumnType::STRING; break;
+         default:
+        	 type_data = ColumnType::STRING;
+      }
+	return type_data;
+}
+
+
 
 
 class InterfaceTable {

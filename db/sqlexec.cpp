@@ -16,9 +16,12 @@ std::unique_ptr<gui::OutputForm> sql_exec::showReport(){
 	pqxx::result ret_data { statement.exec(sql) };
 
 	ssize_t column_size = ret_data.columns();
-
+/*
+ *
+ */
 	for (ssize_t column_index = 0; column_index < column_size; column_index++){
-		report->add_column(ret_data.column_name(column_index));
+		ColumnType columnType = getType(ret_data.column_type(static_cast<int>(column_index)));
+		report->add_column(ret_data.column_name(column_index), columnType);
 	}
 
 	vector<std::string> new_row;

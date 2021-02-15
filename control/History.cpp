@@ -15,7 +15,7 @@ void History::ShowValue() {
 	std::unique_ptr<gui::OutputForm> history_report(new gui::OutputForm());
 
 	history_report->setTitle("HISTORY");
-	history_report->add_column("number").add_column("command");
+	history_report->add_column("number", gui::OutputForm::ColumnType::NUM).add_column("command");
 	if (!qhistory.empty()) {
 		int history_count = 0;
 		for (std::deque<std::string>::iterator history_pointer = std::begin(qhistory); history_pointer != std::end(qhistory);history_pointer++) {

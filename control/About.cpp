@@ -14,7 +14,7 @@ namespace control {
 About::About(const char * title){
 	help = std::make_unique<gui::OutputForm> ();
 	help->setTitle(title);
-	help->add_column("command").add_column("description");
+	help->add_column("command", gui::OutputForm::ColumnType::NUM).add_column("description");
 }
 
 void About::AddInfo(const char * Key, const char ** about_info) {

@@ -44,7 +44,7 @@ column_info ColumnInfo::getColumnInfo() {
 
 std::unique_ptr<gui::OutputForm> reportTablesList(std::shared_ptr<db_tables_info> tables_list){
 	std::unique_ptr<gui::OutputForm> report(new gui::OutputForm());
-	report->add_column("number").add_column("schema").add_column("table");
+	report->add_column("number",gui::OutputForm::ColumnType::NUM).add_column("schema").add_column("table");
 
 	std::for_each(std::begin(*tables_list), std::end(*tables_list), [&](DbObject &table){
 		report->add_row({std::to_string(table.index), table.schema, table.table});
@@ -57,7 +57,7 @@ std::unique_ptr<gui::OutputForm> reportTablesList(std::shared_ptr<db_tables_info
 
 std::unique_ptr<gui::OutputForm> reportTablesInfo(const db::HeaderInfo& tables_info){
 	std::unique_ptr<gui::OutputForm> report(new gui::OutputForm());
-	report->add_column("number").add_column("label").add_column("type").add_column("size").add_column("constraint").add_column("fk_schema").add_column("fk_table").add_column("fk_column");
+	report->add_column("number", gui::OutputForm::ColumnType::NUM).add_column("label").add_column("type").add_column("size", gui::OutputForm::ColumnType::NUM).add_column("constraint").add_column("fk_schema").add_column("fk_table").add_column("fk_column");
 
 	int column_index, size;
 	std::string label, col_type_label, col_constraint_label, fk_schema, fk_table, fk_column;

@@ -36,30 +36,20 @@ public:
 
 //template <int size = 10>
 class OutputForm  {
-	int column_size;
-	std::vector<std::string> header_label;
-	std::vector<std::string::size_type> columns_size;
-	std::vector<std::vector<std::string> > data;
-
-	std::string title;
-
-	void calcSizeColumn(std::vector<std::string> new_row) {
-		for (int count=0;count<column_size;count++) {
-			if (new_row[count].size() > columns_size[count]) {
-				 columns_size[count] = new_row[count].size();
-			}
-		}
-	}
 
 public:
+
+	enum class ColumnType { NUM=0, STRING = 1 };
+
 	OutputForm(): column_size(0){	}
 
 	virtual ~OutputForm(){}
 
 
-	OutputForm& add_column(const char* new_column){
+	OutputForm& add_column(const char* new_column, ColumnType type = ColumnType::STRING){
 			header_label.push_back(std::string(new_column));
 			columns_size.push_back(strlen(new_column));
+			type_list.push_back(type);
 			column_size++;
 		return *this;
 	}
@@ -93,9 +83,8 @@ public:
     }
 
 	std::vector<std::string>& getHeaderLabel() {return header_label;}
-
 	std::vector<std::string::size_type>& getColumnSize() {return columns_size;}
-
+	std::vector<ColumnType>& getColumnType() {return type_list;}
 
 	std::string getTitle() {
 		return title;
@@ -109,6 +98,26 @@ public:
     {
 		return data[row_id];
     }
+private:
+	int column_size;
+	std::vector<std::string> header_label;
+	std::vector<std::string::size_type> columns_size;
+	std::vector<std::vector<std::string> > data;
+	std::vector<ColumnType> type_list;
+
+	std::string title;
+
+
+
+
+	void calcSizeColumn(std::vector<std::string> new_row) {
+		for (int count=0;count<column_size;count++) {
+			if (new_row[count].size() > columns_size[count]) {
+				 columns_size[count] = new_row[count].size();
+			}
+		}
+	}
+
 };
 
 
@@ -237,7 +246,7 @@ class printer {
 		std::for_each(std::begin(columnSize), std::end(columnSize),
 				[&](std::string::size_type col_size){
 					if (style.column_line_empty > 0) output << std::setfill(style.center_sep) << std::setw(style.column_line_empty) << style.center_sep;
-					output << std::setfill(style.center_sep) << std::setw(col_size) << header[column_count];
+					output << std::left << std::setfill(style.center_sep) << std::setw(col_size) << header[column_count];
 					if (style.column_line_empty > 0) output << std::setfill(style.center_sep) << std::setw(style.column_line_empty) << style.center_sep;
 					if (column_count < columns_insert) {
 						output << style.center_column;
@@ -249,7 +258,7 @@ class printer {
 	}
 
 
-	void showRow(std::vector<std::string>& row) {
+	void showRow(std::vector<std::string>& row, std::vector<OutputForm::ColumnType>& columnType) {
 		std::vector<std::string::size_type>& columnSize =tableForm->getColumnSize() ;
 		int columns_insert = columnSize.size()-1;
 		int column_count = 0;
@@ -257,6 +266,13 @@ class printer {
 		std::for_each(std::begin(columnSize), std::end(columnSize),
 				[&](std::string::size_type col_size){
 					if (style.column_line_empty > 0) output << std::setfill(style.center_sep) << std::setw(style.column_line_empty) << style.center_sep;
+
+					if (columnType[column_count] == OutputForm::ColumnType::NUM) {
+						output << std::right;
+					} else {
+						output << std::left;
+					}
+
 					output << std::setfill(style.center_sep) << std::setw(col_size) << row[column_count];
 					if (style.column_line_empty > 0) output << std::setfill(style.center_sep) << std::setw(style.column_line_empty) << style.center_sep;
 					if (column_count < columns_insert) {
@@ -289,7 +305,7 @@ public:
 			showHeader(tableForm->getHeaderLabel());
 			showUpLine();
 			for (int index = 0; index < static_cast<int>(tableForm->getRowSize()); index++) {
-				showRow((*tableForm)[index]);
+				showRow((*tableForm)[index], tableForm->getColumnType());
 			}
 			showDownLine();
 		}

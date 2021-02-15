@@ -91,10 +91,13 @@ public:
 	selector(const selector &other) = delete;
 	selector(selector &&other) = delete;
 	virtual ~selector(){}
-/*
-	selector& operator=(const selector &other);
-	selector& operator=(selector &&other);
-*/
+
+	selector& operator=(const selector &other) = delete;
+	selector& operator=(selector &&other) = delete;
+
+
+
+
 
 	std::unique_ptr<gui::OutputForm> showReport(int position, int size){
 		std::unique_ptr<gui::OutputForm> report(new gui::OutputForm());
@@ -110,7 +113,8 @@ public:
 		ssize_t column_size = ret_data.columns();
 
 		for (ssize_t column_index = 0; column_index < column_size; column_index++){
-			report->add_column(ret_data.column_name(column_index));
+			ColumnType columnType = getType(ret_data.column_type(static_cast<int>(column_index)));
+			report->add_column(ret_data.column_name(column_index), columnType);
 		}
 
 		vector<std::string> new_row;
