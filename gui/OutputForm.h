@@ -39,11 +39,11 @@ class OutputForm  {
 
 public:
 
-	enum class ColumnType { NUM=0, STRING = 1 };
+	enum class ColumnType { NUM=0, BOOL, STRING, DATE };
 
 	OutputForm(): column_size(0){	}
 
-	virtual ~OutputForm(){}
+	virtual ~OutputForm() = default;
 
 
 	OutputForm& add_column(const char* new_column, ColumnType type = ColumnType::STRING){
@@ -267,10 +267,15 @@ class printer {
 				[&](std::string::size_type col_size){
 					if (style.column_line_empty > 0) output << std::setfill(style.center_sep) << std::setw(style.column_line_empty) << style.center_sep;
 
-					if (columnType[column_count] == OutputForm::ColumnType::NUM) {
-						output << std::right;
-					} else {
-						output << std::left;
+
+					switch (columnType[column_count] ) {
+						case OutputForm::ColumnType::NUM:
+						case OutputForm::ColumnType::DATE:
+						case OutputForm::ColumnType::BOOL:
+							output << std::right;
+							break;
+						default:
+							output << std::left;
 					}
 
 					output << std::setfill(style.center_sep) << std::setw(col_size) << row[column_count];

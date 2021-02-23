@@ -11,7 +11,10 @@
 #include <pqxx/pqxx>
 #include "../utils/apputils.h"
 
+
 namespace control {
+
+CommandControl::CommandControl(): control::Log("command-control"), default_func(nullptr), ignoreDefaultCmdList(nullptr) {}
 
 
 
@@ -38,14 +41,14 @@ void CommandControl::Start(){
 			try {
 				run_cmd(cmd_line, false);
 			} catch (pqxx::sql_error const &e) {
-					std::cerr << "Database error: " << e.what() << std::endl
-							  << "Query was: " << e.query() << std::endl;;
+					msg( "Database error: " , e.what() , ". Query was: " , e.query() );
 			}
 		}
 	}
 }
 
 void CommandControl::RegisterAbout(std::shared_ptr<control::About> about_class){
+	msg("register about class");
 	aboutClass = about_class;
 }
 
@@ -68,6 +71,7 @@ void CommandControl::RegisterHistory(std::shared_ptr<control::History> new_histo
 
 void CommandControl::RegisterOperation(const char * Key, ptr_action_func &ptr_func, bool isDefault, const char ** about_info){
 	// TODO Auto-generated constructor stub
+	msg("RegisterOperation: " , Key);
 	cmd_list[Key] = ptr_func;
 	is_default_list[Key] = isDefault;
 	aboutClass->AddInfo(Key, about_info);
@@ -102,9 +106,7 @@ void CommandControl::run_cmd(std::string cmd_line, bool isHistory) {
 	for (const auto &pair : cmd_list) {
 		if (strcmp(pair.first,token.c_str()) == 0) {
 			(*pair.second)(command_string);
-
 			isDefault = false;
-
 			if (!isHistory ) {
 				if (!history_token.empty()  && ( token.find(history_token) == std::string::npos) ) {
 					std::ostringstream history_string;
@@ -114,7 +116,7 @@ void CommandControl::run_cmd(std::string cmd_line, bool isHistory) {
 						history_string << token << std::string(DELIMITER) << command_string;
 					}
 					if (!history->addValue(history_string.str())){
-						std::cerr << "Error add command in History" << std::endl;
+						msg( "Error add command ", history_string.str().c_str() ," in History" );
 					}
 				}
 			}
@@ -151,7 +153,7 @@ bool CommandControl::isDefaultSchema(std::string cmd_line) {
 			}
 		}
 	} catch (...){
-		std::cerr << "key not found" << std::endl;
+		msg( "key " , cmd_line , " not found");
 	}
 	return isDefault;
 }

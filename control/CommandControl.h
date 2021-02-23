@@ -14,14 +14,13 @@
 #include <cstring>
 #include <functional>
 #include "DefaultSchema.h"
-
-
-
+#include "Log.h"
 
 namespace control {
 
 	class About;
 	class History;
+//	class Log;
 
 	typedef std::function<void (std::string& cmd_line)> intercept_func;  // (*)
 	typedef std::shared_ptr<intercept_func> ptr_action_func;
@@ -33,7 +32,7 @@ namespace control {
 
 		virtual void run_cmd(std::string cmd_line, bool isHistory) = 0;
 	public:
-		virtual ~RunCmdInterface() {}
+		virtual ~RunCmdInterface() = default;
 	};
 
 
@@ -49,13 +48,10 @@ namespace control {
 
 
 
-	class CommandControl final : public RunCmdInterface, public IsDefaultCmdInterface, std::enable_shared_from_this<RunCmdInterface>, std::enable_shared_from_this<IsDefaultCmdInterface>  {
+	class CommandControl final : protected Log, public RunCmdInterface, public IsDefaultCmdInterface, std::enable_shared_from_this<RunCmdInterface>, std::enable_shared_from_this<IsDefaultCmdInterface>  {
 	public:
-		CommandControl(): default_func(nullptr), ignoreDefaultCmdList(nullptr) {}
-		virtual ~CommandControl() {
-			// TODO Auto-generated destructor stub
-			cmd_list.clear();
-		}
+		CommandControl();
+		virtual ~CommandControl() = default;
 
 		CommandControl& operator=(const CommandControl &other){
 			// TODO Auto-generated constructor stub

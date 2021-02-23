@@ -17,14 +17,12 @@
 #include <vector>
 #include <map>
 #include <cpprest/json.h>                       // JSON library
+#include "../control/Log.h"
 
-using namespace web; //::json;                                  // JSON library
-
-
-
+using namespace web;                            // JSON library
 
 namespace config {
-
+#define LOG_TAG "config"
 #define DEFAULT_CONFIG_NAME  "pg-sql.json"
 
 enum ClassType {
@@ -53,11 +51,11 @@ public:
 };
 
 
-class AppConfigControl {
+class AppConfigControl : protected control::Log {
 	private:
-		std::string file_config;
+		inline static std::string file_config;
 		inline static json::value base_config;
-		std::map<const char *, std::shared_ptr<IConfigCallBack> > callbackConnection;
+		inline static std::map<const char *, IConfigCallBack * > callbackConnection; // std::shared_ptr<IConfigCallBack>
 	protected:
 		json::value getSectionConfig(const char * section_name);
 		void setModuleConfig(const char * section_name, json::value& section_value);
@@ -65,17 +63,19 @@ class AppConfigControl {
 		bool isEmpty() const {return (base_config.size() == 0);}
 
 		void UnRegisterCallback(const char * key );
-		void Update() ; //{std::cerr << "AppConfigControl->Update() is virtual Metod!!!" << std::endl;}
+		void Update();
 	public:
-		void RegisterCallback(const char * key, std::shared_ptr<IConfigCallBack> callback);
-		AppConfigControl():AppConfigControl(DEFAULT_CONFIG){}
-		AppConfigControl(std::string file_config);
+		AppConfigControl():AppConfigControl(DEFAULT_CONFIG, LOG_TAG){}
+		AppConfigControl(std::string file_config, const char * logTag);
 		virtual ~AppConfigControl() = default;
 
+		void RegisterCallback(const char * key, IConfigCallBack * callback); // std::shared_ptr<IConfigCallBack>
 		bool isContainModule (const char * KeyName) const;
 		void LoadNewConfig(const char * FileName);
 		void SaveConfig   (const char * FileName);
 		void clear() {base_config= json::value::null();}
+
+		void CloseConfig() {callbackConnection.clear();}
 		std::unique_ptr<std::string> showTree(const char * config_module = nullptr);
 };
 
@@ -84,16 +84,24 @@ class AppConfigControl {
 
 class AppConfig: public config::AppConfigControl {
 	public:
-		AppConfig(const char * section, const field_type int_field_array[], ssize_t field_size ) : section_config(section) {
+		AppConfig(const char * section, const field_type int_field_array[], ssize_t field_size , const char * logTag) : config::AppConfigControl(DEFAULT_CONFIG, logTag) ,section_config(section) {
 			refreshConfig();
+
+			bool isEmptyData = this->isSectionEmpty();
+
 			for (ssize_t count= 0; count < field_size; count++) {
 				const field_type field = int_field_array[count];
 				field_array.push_back(field);
+				if (isEmptyData) {setConfigLine(field.key, field.default_val);}
 			}
+
+			if (isEmptyData) {saveSession();}
+
 		}
 		virtual ~AppConfig() = default;
 
 		void setConfigLine( const char * key, const void * value);
+		bool setCommandLineValue(const char * key, const char * value);
 
 		bool        isSectionEmpty()            const;
 		bool        isContainKey (const char * KeyName) const;
@@ -136,15 +144,9 @@ class DbAppConfig final: public AppConfig, public config::IConfigCallBack {
 	public:
 		DbAppConfig() :
 				AppConfig(moduleName, int_field_array,
-						sizeof(int_field_array) / sizeof(int_field_array[0])) {
-			if (this->isSectionEmpty()) {
-				for (field_type field : int_field_array) {
-					setConfigLine(field.key, field.default_val);
-				}
-				saveSession();
-			}
-		}
-		virtual ~DbAppConfig() = default;
+						sizeof(int_field_array) / sizeof(int_field_array[0]), "DB_ONFIG") {}
+
+		virtual ~DbAppConfig() {this->UnRegisterCallback(moduleName);}
 
 		std::string getConfigLine() {
 			std::stringstream m_stream;
@@ -170,6 +172,40 @@ class DbAppConfig final: public AppConfig, public config::IConfigCallBack {
 			return m_stream.str();
 		}
 };
+
+
+
+
+class LogAppConfig final: public AppConfig, public config::IConfigCallBack {
+	private:
+		inline static const char *moduleName = "log";
+
+		inline static const field_type int_field_array[] = {
+				{ "log_file", STRING, static_cast<const void*>("app_log.log") },
+				{ "debug", BOOLEAN, static_cast<const void*>( (bool[]) {false} ) }
+		};
+
+	public:
+		LogAppConfig() :
+				AppConfig(moduleName, int_field_array,
+						sizeof(int_field_array) / sizeof(int_field_array[0]), "LOG_CONFIG") {
+
+		}
+		virtual ~LogAppConfig() {this->UnRegisterCallback(moduleName);}
+
+		std::string getLogFilePath() const {
+			return this->getString("log_file");
+		}
+
+		bool isDebug() const {
+			return this->getBool("debug");
+		}
+
+		void Update() {
+			refreshConfig();
+		}
+};
+
 } /* namespace config */
 
 #endif /* CONFIG_APPCONFIGCONTROL_H_ */

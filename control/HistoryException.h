@@ -15,7 +15,7 @@ class HistoryException : public std::exception {
 	std::string err_msg;
 	public:
 	HistoryException(std::string error) : err_msg(error) {}
-	virtual ~HistoryException(){}
+	virtual ~HistoryException() = default;
 
 	const char* what() const noexcept { return err_msg.c_str(); } // C++11 и выше
 };

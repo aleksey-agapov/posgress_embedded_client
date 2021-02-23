@@ -8,19 +8,29 @@
 #ifndef CONTROL_CONSOLEINTERFACE_H_
 #define CONTROL_CONSOLEINTERFACE_H_
 
+
+#include <string>
+#include <memory>
+
+
+namespace threads {
+	class LogThread;
+}
+
+namespace config {
+	class DbAppConfig;
+	class LogAppConfig;
+}
+
+
 namespace control {
 	class About;
+	class History;
+	class DefaultSchema;
 }
 
 
 using namespace std;
-
-#include <iostream>
-#include "../db/db_table_class_list.h"
-#include "../db/selector.h"
-#include "../db/sqlexec.h"
-#include "History.h"
-#include "DefaultSchema.h"
 
 extern void exit_func(std::string& in);
 extern void clear_func (std::string& in);
@@ -39,7 +49,10 @@ extern void execute_sql (std::string& in);
 
 extern void init_config_control();
 extern std::shared_ptr<config::DbAppConfig> get_db_config_control();
+extern std::shared_ptr<config::LogAppConfig> get_log_config_control();
+extern std::shared_ptr<threads::LogThread> get_log_deamon();
 extern void config_operation (std::string& in);
+extern void log_operation (std::string& in);
 
 extern void init_default_control();
 extern void set_default(std::string& in);

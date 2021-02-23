@@ -8,7 +8,7 @@
 #include "sqlexec.h"
 
 namespace db {
-// TODO Auto-generated constructor stu
+
 std::unique_ptr<gui::OutputForm> sql_exec::showReport(){
 	std::unique_ptr<gui::OutputForm> report(new gui::OutputForm());
 	pqxx::work statement{*getConnection()};

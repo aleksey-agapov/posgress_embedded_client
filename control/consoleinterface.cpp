@@ -5,24 +5,35 @@
  *      Author: root
  */
 
-#include <string>
+
 #include <iostream>
 #include <tuple>
 #include <algorithm>
 #include <cctype>
 #include <string>
-#include <memory>
+#include <thread>
+
 #include "consoleinterface.h"
 #include "CommandControl.h"
 #include "About.h"
+#include "DefaultSchema.h"
+#include "History.h"
+
 #include "../utils/apputils.h"
+#include "../db/db_table_class_list.h"
+#include "../db/selector.h"
+#include "../db/sqlexec.h"
+#include "../thread/log_thread.h"
+
 
 
 std::shared_ptr<db::TabelControl> db_control;
 std::shared_ptr<control::History> history;
 std::shared_ptr<control::DefaultSchema> default_control;
 std::shared_ptr<config::DbAppConfig> db_config;
+std::shared_ptr<config::LogAppConfig> log_config;
 std::shared_ptr<control::About> about_module;
+std::shared_ptr<threads::LogThread> logThread;
 
 void init_about_control(const char * title){
 	about_module = std::make_shared<control::About> (title);
@@ -35,16 +46,30 @@ std::shared_ptr<control::About> get_about_control(){
 
 // ////////////////////////////////////////////////////////////////
 
+
 void init_config_control(){
 	db_config = std::make_shared<config::DbAppConfig> ();
+	log_config= std::make_shared<config::LogAppConfig> ();
+	logThread = std::make_shared<threads::LogThread>(log_config->getLogFilePath());
 }
 
+std::shared_ptr<config::LogAppConfig> get_log_config_control(){
+	return log_config;
+}
 
 std::shared_ptr<config::DbAppConfig> get_db_config_control(){
 	return db_config;
 }
+
+std::shared_ptr<threads::LogThread> get_log_deamon(){
+	return logThread;
+}
+
+
+
+
 /*
- *
+ * edit
  * save
  * load
  * show
@@ -58,8 +83,8 @@ void config_operation (std::string& cmd_line){
 	if (first_pos == std::string::npos) {
 		command = cmd_line;
 	} else {
-		command_string = cmd_line.substr(first_pos + 1); // token is "scott"
-		command = cmd_line.substr(0, first_pos); // token is "scott"
+		command_string = cmd_line.substr(first_pos + 1);
+		command = cmd_line.substr(0, first_pos);
 	}
 
 	if (!command_string.empty()) {
@@ -69,27 +94,12 @@ void config_operation (std::string& cmd_line){
 		if (command.compare("save") == 0) {
 			db_config->SaveConfig(command_string.c_str());
 		} else
-		/*
-		if (command.compare("select") == 0) {
-			const char * KeyName = command_string.c_str();
-			if (db_config->isContainModule(KeyName)) {
-				select_config_module = command_string;
-			}
-		} else
-
-		if (command.compare("show") == 0) {
-			const char * KeyName = command_string.c_str();
-			if (db_config->isContainModule(KeyName)) {
-				db_config->showTree(KeyName);
-			}
-		} else
-		*/
 		if (command.compare("edit") == 0) {
 			first_pos = command_string.find(delimiter);
 			if (first_pos != std::string::npos) {
-				std::string obj_value = command_string.substr(first_pos + 1); // token is "scott"
-				std::string obj_key   = command_string.substr(0, first_pos); // token is "scott"
-				db_config->setConfigLine(obj_key.c_str(), obj_value.c_str());
+				std::string obj_value = command_string.substr(first_pos + 1);
+				std::string obj_key   = command_string.substr(0, first_pos);
+				db_config->setCommandLineValue(obj_key.c_str(), obj_value.c_str());
 			}
 		}
 	} else {
@@ -97,18 +107,51 @@ void config_operation (std::string& cmd_line){
 			db_config->clear();
 		} else
 		if (command.compare("show") == 0) {
-			std::cout << *db_config->showTree() << std::endl;
+			std::cout << *db_config->showTree(db_config->getModuleName()) << std::endl;
 		}
 	}
+}
+/*
+ * edit
+ * show
+ * clear
+ */
+void log_operation (std::string& cmd_line) {
+	const std::string delimiter( DELIMITER);
+	std::string command_string;
+	std::string command;
+	std::string::size_type first_pos = cmd_line.find(delimiter);
+	if (first_pos == std::string::npos) {
+		command = cmd_line;
+	} else {
+		command_string = cmd_line.substr(first_pos + 1);
+		command = cmd_line.substr(0, first_pos);
+	}
 
-
+	if (!command_string.empty()) {
+		if (command.compare("edit") == 0) {
+			first_pos = command_string.find(delimiter);
+			if (first_pos != std::string::npos) {
+				std::string obj_value = command_string.substr(first_pos + 1);
+				std::string obj_key   = command_string.substr(0, first_pos);
+				if (log_config->setCommandLineValue(obj_key.c_str(), obj_value.c_str())) {
+					logThread->Update();
+				}
+			}
+		}
+	} else {
+		if (command.compare("clear") == 0) {
+			log_config->clear();
+		} else
+		if (command.compare("show") == 0) {
+			std::cout << *log_config->showTree(log_config->getModuleName()) << std::endl;
+		}
+	}
 }
 
-bool is_number(const std::string &s) {
-  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
-}
-
-
+/*
+ * schema
+ */
 void set_schema_func(std::string& in) {
 	db_control->setSchema(in);
 }
@@ -125,7 +168,7 @@ void db_list_func (std::string& in){
 
 void db_info_func (std::string& in){
 	std::shared_ptr<db::InterfaceTable> table;
-	if (is_number(in)) {
+	if (utils::is_number(in)) {
 		table = db_control->getTableInfo(std::stoi(in), false);
 	} else {
 		std::string schema;
@@ -174,7 +217,7 @@ void db_select_func (std::string& in){
 
 	std::vector<int> table_list;
 	auto add_list_func = [&](std::string in_val) {
-		if (is_number(in_val)) {
+		if (utils::is_number(in_val)) {
 			table_list.push_back(std::stoi(in));
 		}
 	};
@@ -225,9 +268,8 @@ std::shared_ptr<control::History> get_history() {
 }
 
 
-
 void show_history(std::string& in) {
-	if (is_number(in)) {
+	if (utils::is_number(in)) {
 		history->runValue(std::stoi(in));
 	} else {
 		history->ShowValue();
@@ -244,7 +286,7 @@ void execute_sql (std::string& in) {
 		show_list.showForm(std::move(sql_report));
 	}
 	} catch (const std::exception &ex) {
-		std::cerr << ex.what() << std::endl;
+		std::cerr << "EqlExecute Error:" << ex.what() << std::endl;
 	}
 }
 
@@ -256,6 +298,7 @@ void init_db_control() {
 }
 
 void exit_func(std::string& in) {
+	logThread->Destroy();
 	std::cout << in << " EXIT!!!" << std::endl;
 	exit(0);
 }

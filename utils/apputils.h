@@ -10,6 +10,8 @@
 
 #include <functional>
 #include <string>
+#include <sstream>
+#include <ios>
 
 /*
  * DELIMITERS for parse arg strings
@@ -52,6 +54,17 @@ namespace utils {
 	    return str;
 	}
 
+	static inline bool to_bool(std::string str) {
+	    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+	    std::istringstream is(str);
+	    bool b;
+	    is >> std::boolalpha >> b;
+	    return b;
+	}
+
+	static inline bool is_number(const std::string &s) {
+	  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+	}
 
 }
 

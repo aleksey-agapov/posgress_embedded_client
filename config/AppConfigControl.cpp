@@ -11,14 +11,16 @@
 #include <sstream>
 #include <utility>
 #include "../db/db_table_class_list.h"
-
+#include "../utils/apputils.h"
 
 
 namespace config {
 
-AppConfigControl::AppConfigControl(std::string file_config) {
+AppConfigControl::AppConfigControl(std::string file_config, const char * logTag) : control::Log(logTag) {
 	// TODO Auto-generated constructor stub
-	LoadNewConfig(file_config.c_str());
+	if (base_config.is_null()) {
+		LoadNewConfig(file_config.c_str());
+	}
 }
 
 std::unique_ptr<std::string> AppConfigControl::showTree(const char * config_module) {
@@ -49,17 +51,16 @@ void AppConfigControl::LoadNewConfig(const char * FileName) {
 	}
 	if (fb.open(file_config.c_str(), std::ios::in)) {
 		try {
-			std::cout << "!!!!!!!!!!READ!!!!!!!!!" << file_config
-					<< "!!!!!!!!!!READ!!!!!!!!!" << std::endl;
+			msg( "!!!!!!!!!!READ!!!!!!!!!", file_config, "!!!!!!!!!!READ!!!!!!!!!");  //  std::string("!!!!!!!!!!READ!!!!!!!!!").append(file_config).append("!!!!!!!!!!READ!!!!!!!!!").c_str()
 			utility::istream_t input(&fb); // = static_cast<utility::istream_t&>(read_config_stream);
 			base_config = json::value::parse(input, errorCode); // @suppress("Function cannot be resolved")
 
 			this->Update();
 
 		} catch (const web::json::json_exception &e) {
-			std::cerr << "JSON_ERROR:" << e.what() << std::endl;
+			msg( "JSON_ERROR: " , std::string(e.what()));
 		} catch (std::exception &e) {
-			std::cerr << "ERROR:" << e.what() << std::endl;
+			msg( "ERROR:" , std::string(e.what()));
 			// Return an empty task.
 		}
 
@@ -69,7 +70,7 @@ void AppConfigControl::LoadNewConfig(const char * FileName) {
 			// Return an empty task.
 		}
 	} else {
-		std::cerr << "ERROR in read :" << file_config << std::endl;
+		msg( "ERROR in read :" , file_config );
 	}
 }
 
@@ -88,14 +89,13 @@ void AppConfigControl::SaveConfig(const char * FileName) {
 
 	if (fb.open(full_path.c_str(), std::ios::out)) {
 		try {
-			std::cout << "!!!!!!!!!!UPDATE!!!!!!!!!" << full_path
-					<< "!!!!!!!!!!UPDATE!!!!!!!!!" << std::endl;
+			msg(  "!!!!!!!!!!UPDATE!!!!!!!!!" , full_path , "!!!!!!!!!!UPDATE!!!!!!!!!");
 			utility::ostream_t output(&fb); // = static_cast<utility::istream_t&>(read_config_stream);
 			output << base_config.serialize() << std::endl; // = json::value::se(input, errorCode); // @suppress("Function cannot be resolved") // @suppress("Method cannot be resolved") // @suppress("Invalid overload")
 		} catch (const web::json::json_exception &e) {
-			std::cerr << "JSON_ERROR:" << e.what() << std::endl;
+			msg(  "JSON_ERROR:" , std::string(e.what()) );
 		} catch (std::exception &e) {
-			std::cerr << "ERROR:" << e.what() << std::endl;
+			msg(  "ERROR:" , std::string(e.what()) );
 			// Return an empty task.
 		}
 
@@ -105,7 +105,7 @@ void AppConfigControl::SaveConfig(const char * FileName) {
 			// Return an empty task.
 		}
 	} else {
-		std::cerr << "ERROR in write :" << full_path << std::endl;
+		msg(  "ERROR in write :" , full_path );
 	}
 }
 
@@ -135,24 +135,26 @@ json::value AppConfigControl::getSectionConfig(const char * section_name) {
 	return section_config;
 }
 
-void AppConfigControl::RegisterCallback(const char * key, std::shared_ptr<IConfigCallBack> callback){
+void AppConfigControl::RegisterCallback(const char * key, IConfigCallBack * callback){ // std::shared_ptr<IConfigCallBack>
 //	callbackConnection.insert({key, callback}); // std::make_pair<const char *, config::IConfigCallBack*>(   //
+	msg(std::string("RegisterCallback ").append(key).c_str());
 	callbackConnection[key] = callback;
 	callbackConnection[key]->Update();
 }
 
 
 void AppConfigControl::Update() {
-	for (std::map<const char *, std::shared_ptr<IConfigCallBack>>::iterator callback_record = std::begin(callbackConnection);
+	for (std::map<const char *, IConfigCallBack *>::iterator callback_record = std::begin(callbackConnection);   // std::map<const char *, std::shared_ptr<IConfigCallBack>>::iterator
 			callback_record != std::end(callbackConnection);
 			callback_record++) {
-		std::cerr << "KEY:" << callback_record->first << std::endl;
+		msg( "Update KEY:" , callback_record->first );
 		callback_record->second->Update();
 	}
 }
 
 
 void AppConfigControl::UnRegisterCallback(const char * key ){
+	msg("RegisterCallback ", key);
 	callbackConnection.erase(key);
 }
 
@@ -171,7 +173,7 @@ bool        AppConfig::getBool(const char * key)   const {if (!isSectionEmpty() 
 std::string AppConfig::getString(const char * key) const {if (!isSectionEmpty() && section_config_json.has_field(key) ){ json::value v1 = section_config_json.at(U(key)); if ( v1.is_string())  {return v1.as_string();}  } return ""; } // b = v3.as_bool();
 
 
-void        AppConfig::setConfigLine( const char * key, const void * value) {
+void        AppConfig::setConfigLine(const char * key, const void * value) {
 	for (const field_type field : field_array) {
 		if (strcmp(key,field.key)==0) {
 			switch (field.type) {
@@ -192,46 +194,36 @@ void        AppConfig::setConfigLine( const char * key, const void * value) {
 	}
 }
 
+bool AppConfig::setCommandLineValue(const char * key, const char * value) {
+	bool isExecute = false;
+	for (const field_type field : field_array) {
+		if (strcmp(key,field.key)==0) {
+			switch (field.type) {
+				case BOOLEAN:
+					setBool(field.key, utils::to_bool(value));
+					isExecute = true;
+					break;
+				case INTEGER:
+					setInt(field.key, std::stoi( value ));
+					isExecute = true;
+					break;
+				case DOUBLLE:
+					setDouble(field.key, std::stod( value ));
+					isExecute = true;
+					break;
+				case STRING:
+					setString(field.key, static_cast<const char*>(value));
+					isExecute = true;
+					break;
+			}
+		}
+	}
+	return isExecute;
 
+}
 
 
 
 
 } /* namespace config */
-
-
-
-
-
-/*
-			// тест строк
-			web::json::value color = json_forma_config.at(U("color"));
-			wcout << U("string:") << color.as_string().c_str() << std::endl;
-
-			// тест массивов
-			web::json::value array = json_forma_config.at(U("array"));
-			int sizeArray = array.as_array().size();
-			for (int count = 0;count < sizeArray;count++) {
-				wcout << U("array  index:") << count << U(" value:") << array[count].as_integer() << std::endl;
-			}
-
-
-
-			// Note the "as_object()" method calls
-
-			for (auto iter = json_forma_config.as_object().cbegin(); iter != json_forma_config.as_object().cend(); ++iter)
-
-			{
-
-				// This change lets you get the string straight up from "first"
-
-				const utility::string_t& str = iter->first;
-
-				const web::json::value& v = iter->second;
-
-				wcout << str << U("===>") << v << std::endl;
-
-			}
-
-*/
 

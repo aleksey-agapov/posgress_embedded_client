@@ -19,6 +19,7 @@
 #include "db_info_const.h"
 #include "../gui/OutputForm.h"
 #include "../config/AppConfigControl.h"
+#include "../control/Log.h"
 
 
 
@@ -35,7 +36,7 @@ namespace db {
 
 using ColumnType =  gui::OutputForm::ColumnType;
 
-class  Log;
+//class  Log;
 struct DbObject;
 class  InterfaceTabelControl;
 class  Table;
@@ -81,8 +82,9 @@ inline static ColumnType getType(pqxx::oid sql_type) {
 }
 
 
-
-
+/*
+ * interface
+ */
 class InterfaceTable {
 public:
 	virtual const std::string getName() const = 0;
@@ -94,30 +96,10 @@ public:
 
 
 /*
- * class Log
- */
-class Log {
-	std::string Tag;
-
-	public:
-//		Log() = delete;
-		Log (std::string tag) : Tag(tag){}
-		virtual ~Log(){}
-
-		void setLogTag(std::string tag) {Tag = {tag};}
-		void msg(const char * log_msg) const {std::cout << Tag << " ==> " << log_msg << std::endl; }
-
-};
-
-
-
-
-/*
  * class PgConnection
  */
-class PgConnection : public config::IConfigCallBack {   // , public std::enable_shared_from_this<config::IConfigCallBack>
+class PgConnection : public config::IConfigCallBack, protected control::Log {   // , public std::enable_shared_from_this<config::IConfigCallBack>
 private:
-	Log log;
 	std::shared_ptr<config::DbAppConfig> db_config;
 	inline static std::shared_ptr<pqxx::connection> db_connect;
 
@@ -135,28 +117,21 @@ private:
 
 
 public:
-	PgConnection(): log("PgConnection"){
-		if (!isReady())  throw invalid_argument("No active connection.");
-	}
+	PgConnection(): Log("PgConnection"){}
 
-	PgConnection(std::string connect_parms): log("PgConnection"){
-//		isReady();
-		try {
-			db_connect = std::make_shared<pqxx::connection>(connect_parms);
-		}
-		catch (...){}
-//		if (!isReady())  throw invalid_argument("The argument not correct.");
+	PgConnection(std::string loger_tag): Log(loger_tag){
+		if (!isReady())  throw invalid_argument("No active connection.");
 	}
 
 	void setConfigControl(std::shared_ptr<config::DbAppConfig> db_config) {
 		this->db_config = db_config;
-		db_config->RegisterCallback(db_config->getModuleName(), std::shared_ptr<config::IConfigCallBack>(this));
+		db_config->RegisterCallback(db_config->getModuleName(), this); // std::shared_ptr<config::IConfigCallBack>(
 	}
 
 
 	void Update() {
 		isReady();
-		std::cout << "open database:" << db_config->getConfigLine() << std::endl;
+		msg( "open database:" , db_config->getConfigLine() );
 		db_connect = std::make_shared<pqxx::connection>(db_config->getConfigLine());
 
 		if (db_connect->is_open()) {
@@ -164,7 +139,7 @@ public:
 			std::cout << "              server version: " << db_connect->server_version() << std::endl;
 			std::cout << "            protocol version: " << db_connect->protocol_version() << std::endl;
 		} else {
-			std::cerr << "Can't open database:" << db_config->getConfigLine() << std::endl;
+			msg( "Can't open database:" , db_config->getConfigLine() );
 		}
 	}
 
@@ -173,7 +148,7 @@ public:
 		return db_connect;
 	}
 
-	virtual ~PgConnection(){}
+	virtual ~PgConnection() = default;
 };
 
 #define getRowValue(columnName, row_table, rowValue, ret_obj, retType) auto rowValue = row_table.at(columnName); \
@@ -186,10 +161,10 @@ if (!rowValue.is_null()) { \
  /*
   * class column_info
   */
-class ColumnInfo : private TypeInfo, private Log, private PgConnection {
+class ColumnInfo : private TypeInfo, protected PgConnection {
 public:
 	 ColumnInfo () = delete;
-	 ColumnInfo(std::string new_label, int new_size, Type new_type): Log("ColumnInfo"),
+	 ColumnInfo(std::string new_label, int new_size, Type new_type): PgConnection("ColumnInfo"),
 		 label(new_label),
 		 size(new_size),
 		 data_type(new_type)
@@ -197,7 +172,7 @@ public:
 		 SetDefault();
 	 }
 
-	 ColumnInfo(pqxx::row & row_table) : Log("ColumnInfo") {
+	 ColumnInfo(pqxx::row & row_table) : PgConnection("ColumnInfo") {
 		SetDefault();
 		getRowValue(COLUMN,row_table, row0,label, std::string)		//		label        = row_table.at(COLUMN).as<std::string>();
 		getRowValue(COLUMN_NUMBER,row_table,row1,column_index, int)	//		column_index = row_table.at(COLUMN_NUMBER).as<int>();
@@ -214,13 +189,12 @@ public:
 			getRowValue(FK_TABLE,row_table,row2,fk_table, std::string)
 			getRowValue(FK_COLUMN,row_table,row3,fk_column, std::string)
 			setIsFk(true);
-//			FK = control.getTableInfo(fk_schema, fk_table, false);
 		} else if (col_constraint_label.compare( CONST_PRIMARY_KEY ) == 0) {
 			setIsPk(true);
 		}
 	}
 
-//	const std::shared_ptr<InterfaceTable> getFk() const {return FK;};
+
 	bool isFk() const { return isFK; }; // getBitBoolVal(isFK);
 	bool isPk() const { return isPK; }; // getBitBoolVal(isPK);
 	bool isUnique() const { return isUNIQUE; }; //getBitBoolVal(isUNIQUE);
@@ -239,8 +213,6 @@ public:
 	const std::string& getFkSchema() const;
 	const std::string& getFkTable() const;
 
-//	 std::make_tuple
-
 private:
 	std::string label;
 	int column_index;
@@ -251,7 +223,7 @@ private:
 	bool isPK;
 	bool isUNIQUE;
 	bool isFK;
-//	std::shared_ptr<InterfaceTable> FK;
+
 	std::string fk_schema;
 	std::string fk_table;
 	std::string fk_column;
@@ -263,7 +235,7 @@ private:
 		 setIsFk(false);
 		 setIsPk(false);
 		 setIsUnique(false);
-//		 FK = nullptr;
+
 	}
 
 };
@@ -292,7 +264,7 @@ public :
 /*
  * class Table
  */
-class Table : virtual public InterfaceTable, private db::Log, private db::PgConnection{
+class Table : virtual public InterfaceTable, protected db::PgConnection{
 	std::string name;
 	std::string schema;
 	HeaderInfo header_info;
@@ -351,7 +323,7 @@ class Table : virtual public InterfaceTable, private db::Log, private db::PgConn
 	public :
 		Table () = delete;
 
-		Table(InterfaceTabelControl &control, const char * new_name, const char * new_schema) : Log("Table"){	//  :Log{std::ref(string("Table")}
+		Table(InterfaceTabelControl &control, const char * new_name, const char * new_schema) : PgConnection("Table"){	//  :Log{std::ref(string("Table")}
 			assert(new_name && "initializer new name is empty!");
 			name = new_name;
 			if (new_schema) {schema = new_schema;}
@@ -399,7 +371,7 @@ public :
 };
 
 
-class TabelControl : virtual public InterfaceTabelControl, private Log, private PgConnection{
+class TabelControl : virtual public InterfaceTabelControl, protected PgConnection{
 	private:
 		std::shared_ptr<db_tables_info>    tables_info; // @suppress("Invalid template argument")
 		std::string schema;
@@ -429,7 +401,7 @@ class TabelControl : virtual public InterfaceTabelControl, private Log, private 
 
 
 	public:
-		TabelControl() : Log("TabelControl") {
+		TabelControl() : PgConnection("TabelControl") {
 			tables_info = std::make_shared<db_tables_info>();
 			RefreshTableList();
 		}

@@ -13,7 +13,7 @@ namespace control {
 
 class IsDefaultCmdInterface;
 
-class DefaultSchema final {
+class DefaultSchema final  {
 private:
 	std::string default_module;
 	std::shared_ptr<IsDefaultCmdInterface> controlDefaultInterface;
