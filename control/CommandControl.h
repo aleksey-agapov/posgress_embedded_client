@@ -13,14 +13,13 @@
 #include <memory>
 #include <cstring>
 #include <functional>
-#include "DefaultSchema.h"
 #include "Log.h"
 
 namespace control {
 
 	class About;
 	class History;
-//	class Log;
+	class DefaultSchema;
 
 	typedef std::function<void (std::string& cmd_line)> intercept_func;  // (*)
 	typedef std::shared_ptr<intercept_func> ptr_action_func;

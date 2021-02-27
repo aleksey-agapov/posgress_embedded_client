@@ -16,6 +16,7 @@
 #include <iostream>
 #include <optional>
 #include <algorithm>
+#include <exception>
 #include "db_info_const.h"
 #include "../gui/OutputForm.h"
 #include "../config/AppConfigControl.h"
@@ -100,19 +101,25 @@ public:
  */
 class PgConnection : public config::IConfigCallBack, protected control::Log {   // , public std::enable_shared_from_this<config::IConfigCallBack>
 private:
-	std::shared_ptr<config::DbAppConfig> db_config;
+	inline static std::shared_ptr<config::DbAppConfig> db_config;
 	inline static std::shared_ptr<pqxx::connection> db_connect;
 
+protected:
 	bool isReady() {
-		if (db_connect) {
-			if (!db_connect->is_open()) {
-				try {
-					db_connect->disconnect();
-				} catch (...) {}
-				db_connect = nullptr;
+		try {
+			if (db_connect) {
+				if (!db_connect->is_open()) {
+					try {
+						db_connect->disconnect();
+					} catch (...) {
+					}
+					db_connect = nullptr;
+				}
 			}
+			return (db_connect) ? true : false;
+		} catch (...) {
+			return false;
 		}
-		return (db_connect)?true:false;
 	}
 
 
@@ -120,7 +127,7 @@ public:
 	PgConnection(): Log("PgConnection"){}
 
 	PgConnection(std::string loger_tag): Log(loger_tag){
-		if (!isReady())  throw invalid_argument("No active connection.");
+//		if (!isReady())  throw invalid_argument("No active connection.");
 	}
 
 	void setConfigControl(std::shared_ptr<config::DbAppConfig> db_config) {
@@ -130,16 +137,21 @@ public:
 
 
 	void Update() {
-		isReady();
-		msg( "open database:" , db_config->getConfigLine() );
-		db_connect = std::make_shared<pqxx::connection>(db_config->getConfigLine());
+		msg("open database:", db_config->getConfigLine());
+		try {
+			if (isReady()) {db_connect->disconnect();}
+			db_connect = std::make_shared<pqxx::connection>(db_config->getConfigLine());
 
-		if (db_connect->is_open()) {
-			std::cout << "Opened database successfully: " << db_connect->dbname() << std::endl;
-			std::cout << "              server version: " << db_connect->server_version() << std::endl;
-			std::cout << "            protocol version: " << db_connect->protocol_version() << std::endl;
-		} else {
-			msg( "Can't open database:" , db_config->getConfigLine() );
+			if (db_connect->is_open()) {
+				std::cout << "Opened database successfully: " << db_connect->dbname() << std::endl;
+				std::cout << "              server version: " << db_connect->server_version() << std::endl;
+				std::cout << "            protocol version: " << db_connect->protocol_version() << std::endl;
+			} else {
+				msg("Can't open database:", db_config->getConfigLine());
+			}
+
+		} catch (std::exception const &e) {
+			msg("Database error: ", e.what(), ".");
 		}
 	}
 
@@ -264,7 +276,7 @@ public :
 /*
  * class Table
  */
-class Table : virtual public InterfaceTable, protected db::PgConnection{
+class Table : protected db::PgConnection, public InterfaceTable{
 	std::string name;
 	std::string schema;
 	HeaderInfo header_info;
@@ -272,32 +284,37 @@ class Table : virtual public InterfaceTable, protected db::PgConnection{
 
 		bool updateTableInfo(InterfaceTabelControl &control) {
 			try {
-				pqxx::work statement { *getConnection() };
-				header_info.clear();
+				bool isUpdate = false;
 				char sql_buffer[4096];
 				sprintf(sql_buffer, LIST_TABLES_COLUMN, schema.c_str(), name.c_str());
+				header_info.clear();
 				msg(sql_buffer);
-				pqxx::result ret_column_data { statement.exec(sql_buffer) };
 
-				for (pqxx::row row : ret_column_data) {
-					ColumnInfo column(row);
-					header_info.push_back(column);
+				if (isReady()){
+					pqxx::work statement { *getConnection() };
+					pqxx::result ret_column_data { statement.exec(sql_buffer) };
+
+					for (pqxx::row row : ret_column_data) {
+						ColumnInfo column(row);
+						header_info.push_back(column);
+					}
+
+					sprintf(sql_buffer, LIST_TABLES_COLUMN_REF, schema.c_str(), name.c_str());
+					msg(sql_buffer);
+					pqxx::result ret_ref_data { statement.exec(sql_buffer) };
+					for (pqxx::row row : ret_ref_data) {
+						std::for_each(std::begin(header_info), std::end(header_info), [&](ColumnInfo &column){
+							std::string curent_col = row.at(COLUMN).as<std::string>();
+							if (column.getLabel().compare(curent_col) == 0) {
+								column.setConstraintInfo(control, row);
+							}
+						});
+					}
+					isUpdate = true;
+				} else {
+					msg("Error: Connection lost.");
 				}
-
-
-				sprintf(sql_buffer, LIST_TABLES_COLUMN_REF, schema.c_str(), name.c_str());
-				msg(sql_buffer);
-				pqxx::result ret_ref_data { statement.exec(sql_buffer) };
-				for (pqxx::row row : ret_ref_data) {
-					std::for_each(std::begin(header_info), std::end(header_info), [&](ColumnInfo &column){
-						std::string curent_col = row.at(COLUMN).as<std::string>();
-						if (column.getLabel().compare(curent_col) == 0) {
-							column.setConstraintInfo(control, row);
-						}
-					});
-				}
-
-				return true;
+				return isUpdate;
 			} catch (const std::exception &e) {
 				std::cerr << e.what() << std::endl;
 				header_info.clear();
@@ -371,17 +388,18 @@ public :
 };
 
 
-class TabelControl : virtual public InterfaceTabelControl, protected PgConnection{
+class TabelControl : public InterfaceTabelControl, protected PgConnection{
 	private:
-		std::shared_ptr<db_tables_info>    tables_info; // @suppress("Invalid template argument")
+		std::shared_ptr<db_tables_info>    tables_info;
 		std::string schema;
 
 		void RefreshTableList() {
-				int count = 0;
-				pqxx::work statement{*getConnection()};
-				tables_info->clear();
+			int count = 0;
+			tables_info->clear();
+			if (isReady()) {
+				pqxx::work statement { *getConnection() };
 				pqxx::result ret_data { statement.exec(LIST_TABLES) };
-				for (auto row: ret_data) {
+				for (auto row : ret_data) {
 					DbObject table_info;
 					table_info.index    = count;
 					table_info.schema   = row[0].as<std::string>();
@@ -390,6 +408,9 @@ class TabelControl : virtual public InterfaceTabelControl, protected PgConnectio
 					tables_info->push_back(table_info);
 					count++;
 				}
+			} else {
+				msg("Error: Connection lost.");
+			}
 		}
 
 		std::shared_ptr<db_tables_info> getTableInfo(bool isUpdate) {
@@ -413,7 +434,13 @@ class TabelControl : virtual public InterfaceTabelControl, protected PgConnectio
 			this->schema = new_schema;
 		}
 
-		std::shared_ptr<db_tables_info> getTablesList() {
+		void Reconnect() {
+			Update();
+		}
+
+
+		std::shared_ptr<db_tables_info> getTablesList(bool isRefresh = false) {
+			if (isTableListEmpty() || isRefresh) { RefreshTableList(); }
 			return tables_info;
 		}
 
@@ -445,7 +472,9 @@ class TabelControl : virtual public InterfaceTabelControl, protected PgConnectio
 
 
 		std::shared_ptr<InterfaceTable> getTableInfo(std::string sel_schema, std::string sel_table, bool isUpdate = false) {
-			std::shared_ptr<Table> table;
+			if (isTableListEmpty()) return nullptr;
+
+			std::shared_ptr<Table> table = nullptr;
 			for (db::db_table_info elem : *getTableInfo(isUpdate)) {
 				if ((elem.schema.compare(sel_schema) == 0) && (elem.table.compare(sel_table) == 0)) {
 					if ((elem.prtTable)&& (!isUpdate)) {table = elem.prtTable;}

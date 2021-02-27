@@ -66,6 +66,23 @@ namespace utils {
 	  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
 	}
 
+static inline int getInteger(const std::string &s, const int defaultValue) {
+	try {
+		std::string buff_int_string(s);
+		trim(buff_int_string);
+
+		if (!buff_int_string.empty() && is_number(buff_int_string)) {
+			return std::stoi(buff_int_string);
+		} else {
+			return defaultValue;
+		}
+	} catch (...) {
+		return defaultValue;
+	}
+}
+
+
+
 }
 
 #endif /* UTILS_APPUTILS_H_ */

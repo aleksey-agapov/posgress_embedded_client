@@ -58,8 +58,11 @@ extern void init_default_control();
 extern void set_default(std::string& in);
 extern std::shared_ptr<control::DefaultSchema>get_set_default();
 
-
 extern void init_about_control(const char * title);
 extern std::shared_ptr<control::About> get_about_control();
+
+extern void refresh_table_list (std::string& in);
+extern void reconnect (std::string& in);
+
 
 #endif /* CONTROL_CONSOLEINTERFACE_H_ */

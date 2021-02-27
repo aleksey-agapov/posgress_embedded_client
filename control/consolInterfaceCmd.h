@@ -22,6 +22,9 @@
 #define LOG "log"
 #define SET "set"
 
+#define REFRESH "refresh"
+#define RECONNECT "reconnect"
+
 
 #define ABOUT_TITLE "ABOUT APP PG_CLIENT"
 
@@ -123,7 +126,16 @@ inline static const char * SET_INFO[] = {
 		nullptr
 };
 
+inline static const char * REFRESH_INFO[] = {
+		"Refresh table list.",
+		"",
+		nullptr
+};
 
-
+inline static const char * RECONNECT_INFO[] = {
+		"Reconnect to db.",
+		"",
+		nullptr
+};
 
 #endif /* CONTROL_CONSOLINTERFACECMD_H_ */

@@ -85,7 +85,8 @@ bool selector::calculateDateRange(int position, int size){
 
 std::unique_ptr<gui::OutputForm> selector::showReport(int position, int size){
 	std::unique_ptr<gui::OutputForm> report(new gui::OutputForm());
-//		int count = 0;
+
+if (isReady()) {
 	pqxx::work statement{*getConnection()};
 
 	std::string sqlExec ( select_sql.str() );
@@ -112,9 +113,10 @@ std::unique_ptr<gui::OutputForm> selector::showReport(int position, int size){
 			);
 		}
 		report->add_row(new_row);
-
 	}
-
+} else {
+	msg("Error: Connection lost.");
+}
 	return std::move(report);
 }
 

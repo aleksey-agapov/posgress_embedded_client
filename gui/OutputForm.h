@@ -17,6 +17,7 @@
 #include <memory>
 #include <sstream>
 #include <iomanip>
+#include "../control/Log.h"
 
 namespace gui {
 
@@ -35,7 +36,7 @@ public:
 
 
 //template <int size = 10>
-class OutputForm  {
+class OutputForm : protected control::Log {
 
 public:
 
@@ -165,7 +166,7 @@ struct printerTableStyle{
 
 
 
-class printer {
+class printer : protected control::Log  {
 	std::ostream& output;
 	printerTableStyle style;
 	std::string::size_type table_size;

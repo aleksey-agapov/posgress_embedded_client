@@ -156,7 +156,9 @@ void set_schema_func(std::string& in) {
 	db_control->setSchema(in);
 }
 
-
+/*
+ * list tables
+ */
 void db_list_func (std::string& in){
 	clear_func(in);
 	std::unique_ptr<gui::OutputForm> table_list = db::reportTablesList( db_control->getTablesList());
@@ -165,8 +167,11 @@ void db_list_func (std::string& in){
 	show_list.showForm(std::move(table_list));
 }
 
-
+/*
+ * table info
+ */
 void db_info_func (std::string& in){
+	if (in.empty()) return;
 	std::shared_ptr<db::InterfaceTable> table;
 	if (utils::is_number(in)) {
 		table = db_control->getTableInfo(std::stoi(in), false);
@@ -178,22 +183,30 @@ void db_info_func (std::string& in){
 		size_t pos = 0;
 		while ((pos = in.find(delimiter)) != std::string::npos) {
 			schema = in.substr(0, pos);
-		    in.erase(0, pos + delimiter.length());
+			in.erase(0, pos + delimiter.length());
 		}
 		table_name = in;
+
+		utils::trim(schema);
+		utils::trim(table_name);
 
 		if (schema.empty()) {table = db_control->getTableInfo(table_name, false);}
 		else {table = db_control->getTableInfo(schema, table_name, false);}
 	}
-	std::unique_ptr<gui::OutputForm> table_info = db::reportTablesInfo(table->getHeaderInfo());
-	table_info->setTitle("Table info:"+table->getSchema()+"."+table->getName());
-	gui::printer show_list(std::cout);
-	show_list.showForm(std::move(table_info));
+	if (table){
+		std::unique_ptr<gui::OutputForm> table_info = db::reportTablesInfo(table->getHeaderInfo());
+		table_info->setTitle("Table info:"+table->getSchema()+"."+table->getName());
+		gui::printer show_list(std::cout);
+		show_list.showForm(std::move(table_info));
+	}
 }
 
 
-
+/*
+ * show table data
+ */
 void db_select_func (std::string& in){
+	if (in.empty()) return;
 	int show_pos = 0;
 	int show_size = 10;
 
@@ -202,21 +215,21 @@ void db_select_func (std::string& in){
 /////////////
 	std::string::size_type opt_pos = in.find(opt_delimiter);
 	if (opt_pos != std::string::npos) {
-		std::string option_str = in.substr(opt_pos + 1); // token is "scott"
+		std::string option_str = in.substr(opt_pos + 1);
 		in.erase(opt_pos);
 
 		if ((opt_pos = option_str.find(delimiter)) != std::string::npos) {
-			show_pos  = std::stoi(option_str.substr(0, opt_pos));
+			show_pos  = utils::getInteger(option_str.substr(0, opt_pos), show_pos);
 			option_str.erase(0, opt_pos + delimiter.length());
-			show_size = std::stoi(option_str);
+			show_size = utils::getInteger(option_str, show_size);
 		} else {
-			show_pos  = std::stoi(option_str);
+			show_pos  = utils::getInteger(option_str, show_pos);
 		}
 	}
 ////////
-
 	std::vector<int> table_list;
 	auto add_list_func = [&](std::string in_val) {
+		utils::trim(in_val);
 		if (utils::is_number(in_val)) {
 			table_list.push_back(std::stoi(in));
 		}
@@ -225,23 +238,35 @@ void db_select_func (std::string& in){
 	size_t pos = 0;
 	while ((pos = in.find(delimiter)) != std::string::npos) {
 		add_list_func( in.substr(0, pos));
-	    in.erase(0, pos + delimiter.length());
+		in.erase(0, pos + delimiter.length());
 	}
-	add_list_func( in);
+	add_list_func(in);
 
 	std::unique_ptr<db::selector> table_request = db_control->getTablesShow(table_list);
 
 	gui::printer show_list(std::cout);
 	show_list.showForm(std::move(table_request->showReport(show_pos, show_size)));
-
 }
 
+
+/*
+ * refresh table list
+ */
+void refresh_table_list (std::string& in){
+	db_control->getTablesList(true);
+}
+
+/*
+ * reconnect to db
+ */
+void reconnect (std::string& in){
+	db_control->Reconnect();
+}
 
 
 // /////////////////////////////////
 
 void set_default(std::string& in) {
-	utils::trim(in);
 	if (!default_control->setDefault(in)) {
 		std::cerr << "Error set new module:" << in << std::endl;
 	}
@@ -306,20 +331,10 @@ void exit_func(std::string& in) {
 void clear_func (std::string& in) {
 	// CSI[2J clears screen, CSI[H moves the cursor to top-left corner
 	std::cout << "\x1B[2J\x1B[H\033c";
-//	clrscr();
 }
 
 void help_func (std::string& in) {
 	clear_func(in);
 	about_module->printAbout(std::cout);
 }
-//} /* namespace control */
-
-
-
-
-
-
-
-
 

@@ -60,25 +60,32 @@ int main(int argc, char *argv[]) {
 		control::ptr_action_func log_operation_cmd    = std::make_shared<control::intercept_func> (log_operation);
 		control::ptr_action_func set_default_cmd      = std::make_shared<control::intercept_func> (set_default);
 
+
+		control::ptr_action_func refresh_list_table_cmd = std::make_shared<control::intercept_func> (refresh_table_list);
+		control::ptr_action_func reconnect_cmd          = std::make_shared<control::intercept_func> (reconnect);
+
 		control->RegisterAbout(get_about_control());
-		control->RegisterHistory(get_history(), HISTORY);
+		control->RegisterHistory(get_history(),        HISTORY);
 		control->RegisterSetDefault(get_set_default(), list_of_priority_cmd);
 
-		control->RegisterOperation(EXIT1,   exit_cmd, false, EMPTY);
-		control->RegisterOperation(EXIT2,   exit_cmd, false, EXIT_INFO);
-		control->RegisterOperation(CLEAR,   clear_cmd, false, CLEAR_INFO);
-		control->RegisterOperation(HELP,    help_cmd, false, HELP_INFO);
+		control->RegisterOperation(EXIT1,     exit_cmd, false, EMPTY);
+		control->RegisterOperation(EXIT2,     exit_cmd, false, EXIT_INFO);
+		control->RegisterOperation(CLEAR,     clear_cmd, false, CLEAR_INFO);
+		control->RegisterOperation(HELP,      help_cmd, false, HELP_INFO);
 
-		control->RegisterOperation(LIST,    db_list_cmd, false, LIST_INFO);
-		control->RegisterOperation(INFO,    db_info_cmd, true, INFO_INFO);
-		control->RegisterOperation(SHOW,    db_select_cmd, true, SHOW_INFO);
-		control->RegisterOperation(SCHEMA,  db_set_schema_cmd, false, SCHEMA_INFO);
-		control->RegisterOperation(HISTORY, history_cmd, true, HISTORY_INFO);
-		control->RegisterOperation(SQL,     execute_sql_cmd, true, SQL_INFO);
-		control->RegisterOperation(CONFIG,  config_operation_cmd, true, CONFIG_INFO);
+		control->RegisterOperation(REFRESH,   refresh_list_table_cmd, false, REFRESH_INFO);
+		control->RegisterOperation(RECONNECT, reconnect_cmd, false, RECONNECT_INFO);
 
-		control->RegisterOperation(LOG,     log_operation_cmd, true, LOG_INFO);
-		control->RegisterOperation(SET,     set_default_cmd, false, SET_INFO);
+		control->RegisterOperation(LIST,      db_list_cmd, false, LIST_INFO);
+		control->RegisterOperation(INFO,      db_info_cmd, true, INFO_INFO);
+		control->RegisterOperation(SHOW,      db_select_cmd, true, SHOW_INFO);
+		control->RegisterOperation(SCHEMA,    db_set_schema_cmd, false, SCHEMA_INFO);
+		control->RegisterOperation(HISTORY,   history_cmd, true, HISTORY_INFO);
+		control->RegisterOperation(SQL,       execute_sql_cmd, true, SQL_INFO);
+		control->RegisterOperation(CONFIG,    config_operation_cmd, true, CONFIG_INFO);
+
+		control->RegisterOperation(LOG,       log_operation_cmd, true, LOG_INFO);
+		control->RegisterOperation(SET,       set_default_cmd, false, SET_INFO);
 
 		control->RegisterDefault(execute_sql_cmd);
 	} catch (const std::exception &e) {

@@ -5,21 +5,19 @@
  *      Author: user
  */
 
-#include "CommandControl.h"
-#include "History.h"
-#include "About.h"
 #include <pqxx/pqxx>
 #include "../utils/apputils.h"
-
+#include "History.h"
+#include "About.h"
+#include "DefaultSchema.h"
+#include "CommandControl.h"
 
 namespace control {
 
 CommandControl::CommandControl(): control::Log("command-control"), default_func(nullptr), ignoreDefaultCmdList(nullptr) {}
 
 
-
 void CommandControl::Start(){
-	// TODO Auto-generated constructor stub
 	std::string cmd_line;
 	while (true) {
 		if (std::cin.fail()) // если предыдущее извлечение было неудачным,
@@ -41,7 +39,7 @@ void CommandControl::Start(){
 			try {
 				run_cmd(cmd_line, false);
 			} catch (pqxx::sql_error const &e) {
-					msg( "Database error: " , e.what() , ". Query was: " , e.query() );
+				msg( "Database error: " , e.what() , ". Query was: " , e.query() );
 			}
 		}
 	}
