@@ -47,6 +47,7 @@ LIBS := -lstdc++fs -lcpprest -lpqxx -lpthread
 all: build test
 
 prepare:
+	sudo apt update
 	sudo apt install libcpprest-dev libpqxx-dev
 
 build: $(OBJS) 

@@ -1,1 +1,1 @@
-{"db":{"dbname":"db21","hostaddr":"127.0.0.1","password":"12345678","port":5432,"user":"postgres"},"log":{"debug":false,"log_file":"app_log.log"}}
+{"db":{"dbname":"messagedb","hostaddr":"127.0.0.1","password":"12345678","port":5432,"user":"postgres"},"log":{"debug":false,"log_file":"app_log.log"}}
