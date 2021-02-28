@@ -2,7 +2,7 @@
  * sqlexec.cpp
  *
  *  Created on: Jan 25, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include "sqlexec.h"

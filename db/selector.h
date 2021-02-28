@@ -2,7 +2,7 @@
  * selector.h
  *
  *  Created on: Dec 28, 2020
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef DB_SELECTOR_H_

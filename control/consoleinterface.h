@@ -2,7 +2,7 @@
  * consoleinterface.h
  *
  *  Created on: Nov 15, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_CONSOLEINTERFACE_H_

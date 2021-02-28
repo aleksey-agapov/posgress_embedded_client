@@ -51,9 +51,12 @@ prepare:
 
 build: $(OBJS) 
 	@echo 'Building target: $@'
-	g++ -Bstatic -o $(EXECUTABLE) $(OBJS) $(LIBS)
+	g++ -o $(EXECUTABLE) $(OBJS) $(LIBS)
 
-
+install:
+	mkdir -p /opt/pg_client
+	sudo cp $(EXECUTABLE) /opt/pg_client
+	sudo cp config.json /opt/pg_client
 
 %.o: %.cpp
 	@echo 'Building file: $<'

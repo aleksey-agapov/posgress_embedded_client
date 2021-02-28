@@ -2,7 +2,7 @@
  * apputils.h
  *
  *  Created on: Feb 12, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef UTILS_APPUTILS_H_

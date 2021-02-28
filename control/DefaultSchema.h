@@ -2,7 +2,7 @@
  * DefaultSchema.h
  *
  *  Created on: Jan 31, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_DEFAULTSCHEMA_H_

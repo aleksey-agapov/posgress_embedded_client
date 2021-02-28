@@ -2,7 +2,7 @@
  * History.cpp
  *
  *  Created on: Jan 22, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include "HistoryException.h"

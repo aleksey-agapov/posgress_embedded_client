@@ -2,7 +2,7 @@
  * OutputForm.h
  *
  *  Created on: Dec 22, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 
 #ifndef GUI_OUTPUTFORM_H_
@@ -42,7 +42,7 @@ public:
 
 	enum class ColumnType { NUM=0, BOOL, STRING, DATE };
 
-	OutputForm(): column_size(0){	}
+	OutputForm(): control::Log("OutputForm"), column_size(0){	}
 
 	virtual ~OutputForm() = default;
 
@@ -295,7 +295,7 @@ public:
 		printer(std::cout) {}
 	printer(std::ostream& out_stream ) :
 		printer(out_stream,  printerTableStyle::getDefault()) {}
-	printer(std::ostream& out_stream, printerTableStyle new_style ) :
+	printer(std::ostream& out_stream, printerTableStyle new_style ) : control::Log("printer"),
 		output(out_stream),
 		style(new_style),
 		table_size(0){}

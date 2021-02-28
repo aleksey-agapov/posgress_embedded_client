@@ -2,7 +2,7 @@
  * db_info_const.h
  *
  *  Created on: Dec 8, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 
 #ifndef DB_DB_INFO_CONST_H_

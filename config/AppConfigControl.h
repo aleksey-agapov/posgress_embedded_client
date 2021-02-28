@@ -2,7 +2,7 @@
  * AppConfigControl.h
  *
  *  Created on: Jan 27, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONFIG_APPCONFIGCONTROL_H_

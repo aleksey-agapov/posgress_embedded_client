@@ -2,7 +2,7 @@
  * consolInterfaceCmd.h
  *
  *  Created on: Feb 13, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_CONSOLINTERFACECMD_H_
@@ -121,7 +121,7 @@ inline static const char * SET_INFO[] = {
 		"Select default module.",
 		"FORMAT: set <No argument>    - return to root",
 		"            {info|show|history|sql|config} - for retry selected history",
-		"NOTE:   commands: set|exit|help can run from any module" ,
+		"NOTE:   commands: set|exit|help|history|reconnect can run from any module" ,
 		"",
 		nullptr
 };

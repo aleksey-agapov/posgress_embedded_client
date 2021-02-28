@@ -2,7 +2,7 @@
  * apputils.cpp
  *
  *  Created on: Feb 12, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include "apputils.h"

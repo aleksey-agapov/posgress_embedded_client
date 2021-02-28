@@ -1,6 +1,6 @@
 //============================================================================
 // Name        : pg_sql.cpp
-// Author      : Boris
+// Author      : Agapov Aleksey
 // Version     :
 // Copyright   : Your copyright notice
 // Description : PostgreSQL C++, Ansi-style
@@ -17,14 +17,13 @@
 #include "control/consoleinterface.h"
 #include "control/consolInterfaceCmd.h"
 
-// "dbname = messagedb user = postgres password = 12345678 hostaddr = 127.0.0.1 port = 5432";
 int main(int argc, char *argv[]) {
 	std::shared_ptr<threads::LogThread> logThread;
 	std::shared_ptr<config::DbAppConfig>  db_config_module;
 	std::shared_ptr<config::LogAppConfig> log_config_module;
 	std::shared_ptr<control::CommandControl> control;
 	std::shared_ptr<db::PgConnection> connector;
-	const char * list_of_priority_cmd[]  = {SET, EXIT1, EXIT2, HELP, nullptr};
+	const char * list_of_priority_cmd[]  = {SET, RECONNECT, HISTORY, EXIT1, EXIT2, HELP, nullptr};
 
 	try {
 		init_config_control();
@@ -68,24 +67,24 @@ int main(int argc, char *argv[]) {
 		control->RegisterHistory(get_history(),        HISTORY);
 		control->RegisterSetDefault(get_set_default(), list_of_priority_cmd);
 
-		control->RegisterOperation(EXIT1,     exit_cmd, false, EMPTY);
-		control->RegisterOperation(EXIT2,     exit_cmd, false, EXIT_INFO);
-		control->RegisterOperation(CLEAR,     clear_cmd, false, CLEAR_INFO);
-		control->RegisterOperation(HELP,      help_cmd, false, HELP_INFO);
-
+		control->RegisterOperation(RECONNECT, reconnect_cmd,          false, RECONNECT_INFO);
+		control->RegisterOperation(LIST,      db_list_cmd,            false, LIST_INFO);
 		control->RegisterOperation(REFRESH,   refresh_list_table_cmd, false, REFRESH_INFO);
-		control->RegisterOperation(RECONNECT, reconnect_cmd, false, RECONNECT_INFO);
+		control->RegisterOperation(INFO,      db_info_cmd,            true,  INFO_INFO);
+		control->RegisterOperation(SHOW,      db_select_cmd,          true,  SHOW_INFO);
+		control->RegisterOperation(SCHEMA,    db_set_schema_cmd,      false, SCHEMA_INFO);
+		control->RegisterOperation(SQL,       execute_sql_cmd,        true,  SQL_INFO);
 
-		control->RegisterOperation(LIST,      db_list_cmd, false, LIST_INFO);
-		control->RegisterOperation(INFO,      db_info_cmd, true, INFO_INFO);
-		control->RegisterOperation(SHOW,      db_select_cmd, true, SHOW_INFO);
-		control->RegisterOperation(SCHEMA,    db_set_schema_cmd, false, SCHEMA_INFO);
-		control->RegisterOperation(HISTORY,   history_cmd, true, HISTORY_INFO);
-		control->RegisterOperation(SQL,       execute_sql_cmd, true, SQL_INFO);
-		control->RegisterOperation(CONFIG,    config_operation_cmd, true, CONFIG_INFO);
+		control->RegisterOperation(SET,       set_default_cmd,        false, SET_INFO);
+		control->RegisterOperation(CONFIG,    config_operation_cmd,   true,  CONFIG_INFO);
+		control->RegisterOperation(LOG,       log_operation_cmd,      true,  LOG_INFO);
+		control->RegisterOperation(HISTORY,   history_cmd,            true,  HISTORY_INFO);
 
-		control->RegisterOperation(LOG,       log_operation_cmd, true, LOG_INFO);
-		control->RegisterOperation(SET,       set_default_cmd, false, SET_INFO);
+		control->RegisterOperation(CLEAR,     clear_cmd,              false, CLEAR_INFO);
+		control->RegisterOperation(HELP,      help_cmd,               false, HELP_INFO);
+
+		control->RegisterOperation(EXIT1,     exit_cmd,               false, EMPTY);
+		control->RegisterOperation(EXIT2,     exit_cmd,               false, EXIT_INFO);
 
 		control->RegisterDefault(execute_sql_cmd);
 	} catch (const std::exception &e) {

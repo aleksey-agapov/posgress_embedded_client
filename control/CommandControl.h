@@ -2,7 +2,7 @@
  * CommandControl.h
  *
  *  Created on: Nov 14, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_COMMANDCONTROL_H_
@@ -26,7 +26,7 @@ namespace control {
 	typedef std::map<const char *, ptr_action_func > action_list;
 
 	class RunCmdInterface {
-		// Делаем класс History другом класса CommandControl
+		// Делаем класс History другом класса RunCmdInterface
 		friend class control::History;
 
 		virtual void run_cmd(std::string cmd_line, bool isHistory) = 0;
@@ -38,7 +38,7 @@ namespace control {
 
 
 	class IsDefaultCmdInterface {
-		// Делаем класс History другом класса CommandControl
+		// Делаем класс History другом класса IsDefaultCmdInterface
 		friend class control::DefaultSchema;
 		virtual bool isDefaultSchema(std::string cmd_line) = 0;
 	public:
@@ -53,11 +53,9 @@ namespace control {
 		virtual ~CommandControl() = default;
 
 		CommandControl& operator=(const CommandControl &other){
-			// TODO Auto-generated constructor stub
 			return *this;
 		}
 		CommandControl& operator=(CommandControl &&other){
-			// TODO Auto-generated constructor stub
 			return *this;
 		}
 
@@ -69,9 +67,9 @@ namespace control {
 		void RegisterDefault(ptr_action_func &ptr_func);
 
 	private:
-		using isDefaultHash = std::map<const char *, bool>;
+		using DefaultHash = std::map<const char *, bool>;
 
-		isDefaultHash is_default_list;
+		DefaultHash is_default_list;
 		std::string history_token;
 		std::shared_ptr<control::History> history;
 		std::shared_ptr<control::DefaultSchema> defaultClass;

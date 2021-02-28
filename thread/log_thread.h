@@ -2,7 +2,7 @@
  * log_thread.h
  *
  *  Created on: Nov 16, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 
 #ifndef THREAD_LOG_THREAD_H_
@@ -20,7 +20,7 @@
 
 namespace threads {
 
-#define MAX_QUEUE 10
+//#define MAX_QUEUE 10
 #define DEFAULT_FILE_NAME "log_file.log"
 
 class LogThread : public config::IConfigCallBack, std::enable_shared_from_this<config::IConfigCallBack> {
@@ -29,7 +29,6 @@ private:
 	std::condition_variable control_lock;
 	std::shared_ptr<config::LogAppConfig> log_config;
 	std::ofstream output_file;
-//	std::string output_file_name;
 
 	volatile bool isLock = true;
 	volatile bool isRun  = false;

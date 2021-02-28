@@ -2,7 +2,7 @@
  * db_table_class_list.cpp
  *
  *  Created on: Dec 16, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 #include "db_table_class_list.h"
 #include "selector.h"

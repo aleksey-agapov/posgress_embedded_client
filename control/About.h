@@ -2,7 +2,7 @@
  * About.h
  *
  *  Created on: Feb 14, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_ABOUT_H_

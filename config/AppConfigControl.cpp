@@ -2,7 +2,7 @@
  * AppConfigControl.cpp
  *
  *  Created on: Jan 27, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include "AppConfigControl.h"

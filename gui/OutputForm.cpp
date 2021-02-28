@@ -2,7 +2,7 @@
  * OutputForm.cpp
  *
  *  Created on: Dec 22, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 
 #include "OutputForm.h"

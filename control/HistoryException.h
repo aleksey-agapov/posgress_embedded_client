@@ -2,7 +2,7 @@
  * HistoryException.h
  *
  *  Created on: Jan 21, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_HISTORY_EXCEPTION_H_

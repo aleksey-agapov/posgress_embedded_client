@@ -2,7 +2,7 @@
  * About.cpp
  *
  *  Created on: Feb 14, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include <iostream>

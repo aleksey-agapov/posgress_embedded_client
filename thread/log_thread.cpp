@@ -2,7 +2,7 @@
  * ThreadTest.cpp
  *
  *  Created on: Nov 16, 2020
- *      Author: root
+ *      Author: Agapov Aleksey
  */
 #include <thread>
 #include <iostream>
@@ -20,7 +20,7 @@ void LogThread::start_thread() {
 		int count = 0;
 
 		while (isLock) {
-			std::cerr << "THREAD LOCK!" << std::endl;
+//			std::cerr << "THREAD LOCK!" << std::endl;
 			control_lock.wait(lk);
 		}
 
@@ -33,10 +33,10 @@ void LogThread::start_thread() {
 			}
 		}
 
-		std::cerr << "Loger write:" << count << std::endl;
-		std::this_thread::sleep_for(std::chrono::seconds(2));
+//		std::cerr << "Loger write:" << count << std::endl;
+//		std::this_thread::sleep_for(std::chrono::seconds(2));
 	}
-	std::cerr << "THREAD STOP!" << std::endl;
+//	std::cerr << "THREAD STOP!" << std::endl;
 }
 
 void LogThread::setConfigControl(std::shared_ptr<config::LogAppConfig> log_config) {
@@ -85,24 +85,26 @@ void LogThread::SetLogFilePath(std::string FileName) {
 	}
 	close_log_file();
 	output_file.open(output_file_name, std::ofstream::out | std::ofstream::app); // текстовый файл для вывода
-
-	std::cerr << "Cannot open the file:" << output_file_name << " to output." << std::endl;
-
-
+	if (!output_file.is_open()) {
+		std::cerr << "Cannot open the file:" << output_file_name << " to output." << std::endl;
+	}
 }
 
 bool LogThread::writeLogMsg(const char *output_str) {
 	bool isWrite = false ;
-
-	// проверка, открыт ли файл
-	if (!output_file.is_open()) {
-		return false;
-	}
-	try {
-		output_file << output_str << std::endl;
+	if (isWriteLog()) {
+		// проверка, открыт ли файл
+		if (!output_file.is_open()) {
+			return false;
+		}
+		try {
+			output_file << output_str << std::endl;
+			isWrite = true;
+		} catch (std::exception &ex) {
+			std::cerr << "Error of write to log file." << ex.what() << std::endl;
+		}
+	} else {
 		isWrite = true;
-	} catch (std::exception &ex) {
-		std::cerr << "Error of write to log file." << ex.what() << std::endl;
 	}
 	return isWrite;
 }

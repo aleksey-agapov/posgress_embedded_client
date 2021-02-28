@@ -2,7 +2,7 @@
  * selector.cpp
  *
  *  Created on: Dec 28, 2020
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include "selector.h"

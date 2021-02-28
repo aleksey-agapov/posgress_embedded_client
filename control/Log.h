@@ -2,7 +2,7 @@
  * Log.h
  *
  *  Created on: Feb 17, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #ifndef CONTROL_LOG_H_
@@ -17,7 +17,6 @@ namespace control {
 template <class T>
 std::string to_str(const T &val)
 {
-//  using std::to_string;
   return std::to_string(val);
 }
 
@@ -39,6 +38,7 @@ class Log {
 	std::string Tag;
 
 	static void sendToDeamon(const std::string out_msg);
+	static bool isWriteLog();
 
 	public:
 		Log() = delete;
@@ -58,18 +58,18 @@ class Log {
 				loger_msg_stream << parm_current;
 			}
 
-			std::cerr << loger_msg_stream.str() << std::endl;
+//			std::cerr << loger_msg_stream.str() << std::endl;
 			sendToDeamon(loger_msg_stream.str());
 		}
 
 	    template<typename T>
 		void msg(T log_msg) {
-		//	if (threads::LogThread::isWriteLog()) {
+			if (isWriteLog()) {
 				std::ostringstream loger_msg_stream;
 				loger_msg_stream << Tag << " ==> " << log_msg;
-				std::cerr << loger_msg_stream.str() << std::endl;
+//				std::cerr << loger_msg_stream.str() << std::endl;
 				sendToDeamon(loger_msg_stream.str());
-		//	}
+			}
 		}
 };
 

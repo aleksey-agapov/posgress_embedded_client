@@ -2,7 +2,7 @@
  * CommandControl.cpp
  *
  *  Created on: Feb 13, 2021
- *      Author: user
+ *      Author: Agapov Aleksey
  */
 
 #include <pqxx/pqxx>
