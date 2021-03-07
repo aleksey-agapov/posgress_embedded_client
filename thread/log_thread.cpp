@@ -34,7 +34,7 @@ void LogThread::start_thread() {
 		}
 
 //		std::cerr << "Loger write:" << count << std::endl;
-//		std::this_thread::sleep_for(std::chrono::seconds(2));
+		std::this_thread::sleep_for(std::chrono::seconds(2));
 	}
 //	std::cerr << "THREAD STOP!" << std::endl;
 }

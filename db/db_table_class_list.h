@@ -23,14 +23,6 @@
 #include "../control/Log.h"
 
 
-
-
-
-
-
-
-
-
 using namespace std;
 
 namespace db {

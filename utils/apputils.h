@@ -18,6 +18,8 @@
  */
 #define DELIMITER " "
 #define OPTIONS_DELIMITER "|"
+#define COLUMN_LIST_DELIMITER "/"
+#define COLUMN_RANGE_DELIMITER "-"
 
 namespace utils {
 
@@ -81,6 +83,16 @@ static inline int getInteger(const std::string &s, const int defaultValue) {
 	}
 }
 
+
+static inline std::string centered( std::string const& original, int targetSize, char sep )
+{
+    int padding = targetSize - static_cast<int>( original.size() );
+    return padding > 0
+        ? std::string( padding / 2, sep )
+            + original
+            + std::string( targetSize - (padding / 2), sep )
+        : original;
+}
 
 
 }

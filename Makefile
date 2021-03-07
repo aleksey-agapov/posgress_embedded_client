@@ -48,7 +48,7 @@ all: build test
 
 prepare:
 	sudo apt update
-	sudo apt install libcpprest-dev libpqxx-dev
+	sudo apt install g++ ninja-build libcpprest-dev libpqxx-dev
 
 build: $(OBJS) 
 	@echo 'Building target: $@'

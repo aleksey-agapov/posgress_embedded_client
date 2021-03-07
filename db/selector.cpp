@@ -83,40 +83,72 @@ bool selector::calculateDateRange(int position, int size){
 	return !range.str().empty();
 }
 
-std::unique_ptr<gui::OutputForm> selector::showReport(int position, int size){
+std::unique_ptr<gui::OutputForm> selector::showReport(int position, int size, const std::vector<ssize_t> & show_columns_num){
 	std::unique_ptr<gui::OutputForm> report(new gui::OutputForm());
+	if (isReady()) {
+		std::string title;
+		pqxx::work statement{*getConnection()};
+		std::string sqlExec ( select_sql.str() );
 
-if (isReady()) {
-	pqxx::work statement{*getConnection()};
+		bool isRange = calculateDateRange(position, size);
 
-	std::string sqlExec ( select_sql.str() );
+		pqxx::result ret_data { statement.exec(isRange?sqlExec.append(range.str()):sqlExec) };
 
-	bool isRange = calculateDateRange(position, size);
+		ssize_t column_size = ret_data.columns();
 
-	pqxx::result ret_data { statement.exec(isRange?sqlExec.append(range.str()):sqlExec) };
+		title.append("Show records:").append(std::to_string(ret_data.size())).append(" Column size:").append(std::to_string(column_size));
 
-	ssize_t column_size = ret_data.columns();
-
-	for (ssize_t column_index = 0; column_index < column_size; column_index++){
-		ColumnType columnType = getType(ret_data.column_type(static_cast<int>(column_index)));
-		report->add_column(ret_data.column_name(column_index), columnType);
-	}
-
-	vector<std::string> new_row;
-	for (auto row: ret_data) {
-		new_row.clear();
-		for (ssize_t column_index = 0; column_index < column_size; column_index++){
-			new_row.push_back(
-					row[static_cast<int>(column_index)].is_null()?
-							"":
-					row[static_cast<int>(column_index)].as<std::string>()
-			);
+		std::vector<ssize_t> list_column_index;
+		if (!show_columns_num.empty()) {
+			title.append(" Columns show:");
+			for (ssize_t index_column: show_columns_num) {
+				if ((index_column > 0) && (index_column <= column_size)) {
+					msg( "showReport add column index:", index_column, " column_size: ", column_size);
+					list_column_index.push_back(index_column-1);
+					title.append(" ").append(std::to_string(index_column));
+				}
+			}
 		}
-		report->add_row(new_row);
+
+		auto add_header_to_report = [&ret_data, &report](ssize_t column_index ) {
+			ColumnType columnType = getType(ret_data.column_type(static_cast<int>(column_index)));
+			report->add_column(ret_data.column_name(column_index), columnType);
+		};
+
+		if (list_column_index.empty()) {
+			for (ssize_t column_index = 0; column_index < column_size; column_index++){
+				add_header_to_report(column_index);
+			}
+		} else {
+			std::for_each(std::cbegin(list_column_index), std::cend(list_column_index), add_header_to_report);
+		}
+
+		for (auto row: ret_data) {
+			auto new_row = vector<std::string> {};
+			if (list_column_index.empty()) {
+				for (ssize_t column_index = 0; column_index < column_size; column_index++){
+					new_row.push_back(
+						row[static_cast<int>(column_index)].is_null()?
+						"":
+						row[static_cast<int>(column_index)].as<std::string>()
+					);
+				}
+			} else {
+				for (auto column_index: list_column_index) {
+					new_row.push_back(
+						row[static_cast<int>(column_index)].is_null()?
+						"":
+						row[static_cast<int>(column_index)].as<std::string>()
+					);
+				}
+			}
+			report->add_row(new_row);
+		}
+
+		report->setTitle(title);
+	} else {
+		msg("Error: Connection lost.");
 	}
-} else {
-	msg("Error: Connection lost.");
-}
 	return std::move(report);
 }
 
