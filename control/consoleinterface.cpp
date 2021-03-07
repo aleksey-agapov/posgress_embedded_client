@@ -202,50 +202,127 @@ void db_info_func (std::string& in){
 }
 
 
-/*
+/**
  * show table data
  */
-void db_select_func (std::string& in){
-	if (in.empty()) return;
+void db_select_func(std::string &in) {
+	if (in.empty())
+		return;
 	int show_pos = 0;
 	int show_size = 10;
+	std::vector<ssize_t> show_column_list;
 
-	std::string opt_delimiter (OPTIONS_DELIMITER);
-	std::string delimiter ( DELIMITER );
-/////////////
-	std::string::size_type opt_pos = in.find(opt_delimiter);
-	if (opt_pos != std::string::npos) {
-		std::string option_str = in.substr(opt_pos + 1);
-		in.erase(opt_pos);
+	const std::string column_list_delimiter(COLUMN_LIST_DELIMITER);		//  разделитель столбцов
+	const std::string opt_delimiter(OPTIONS_DELIMITER);					//  разделитель опцый
+	const std::string delimiter(DELIMITER);								//  разделитель элементов
 
-		if ((opt_pos = option_str.find(delimiter)) != std::string::npos) {
-			show_pos  = utils::getInteger(option_str.substr(0, opt_pos), show_pos);
-			option_str.erase(0, opt_pos + delimiter.length());
-			show_size = utils::getInteger(option_str, show_size);
+	/**
+	 *	Получение списка отображаемых столбцов
+	 *
+	 */
+	std::string column_list_str;
+	std::string::size_type column_list_pos = in.find(column_list_delimiter);
+	if (column_list_pos != std::string::npos) {
+		column_list_str = in.substr(column_list_pos + 1);
+		in.erase(column_list_pos);
+	}
+
+	/**
+	 *	Получение списка опцый
+	 *
+	 */
+	std::string select_option_str;
+	std::string::size_type select_opt_pos = in.find(opt_delimiter);
+	if (select_opt_pos != std::string::npos) {
+		select_option_str = in.substr(select_opt_pos + 1);
+		in.erase(select_opt_pos);
+	}
+
+	/**
+	 *	Формирование списка отображаемых столбцов
+	 *
+	 */
+	if (!column_list_str.empty()) {
+		std::string::size_type index_column_pos = std::string::npos;
+		auto add_show_column_number =[&column_list_str, &show_column_list](std::string::size_type index_column_pos) {
+			const std::string delimiter_column_range(COLUMN_RANGE_DELIMITER);							//  разделитель диапозон колонок
+			std::string column_record                   = column_list_str.substr(0, index_column_pos);
+			std::string::size_type column_separator_pos = column_record.find(delimiter_column_range);
+
+			auto add_column_index = [&show_column_list](std::string& column_record){
+				int column_number = utils::getInteger(column_record, -1);
+				if ( column_number > 0) {
+					show_column_list.push_back(column_number);
+				}
+			};
+
+			if (column_separator_pos != std::string::npos) {
+				std::string column_start_record                   = column_record.substr(0, column_separator_pos);
+				std::string column_stop_record                    = column_record.substr(column_separator_pos+1);
+				int column_start_record_value                     = utils::getInteger(column_start_record, -1);
+				int column_stop_record_value                      = utils::getInteger(column_stop_record, -1);
+
+				if (column_start_record_value>-1 && column_stop_record_value>-1) {
+					for (int start_pos = column_start_record_value; start_pos<=column_stop_record_value;start_pos++){
+						show_column_list.push_back(static_cast<std::string::size_type>(start_pos));
+					}
+				}
+
+			} else {
+				add_column_index(column_record);
+			}
+		};
+
+		while ((index_column_pos = column_list_str.find(delimiter)) != std::string::npos) {
+			add_show_column_number(index_column_pos);
+			column_list_str.erase(0, index_column_pos + delimiter.length());
+		}
+		add_show_column_number(column_list_str.length());
+	}
+
+	/**
+	 *	Формирование списка опцый отобажения
+	 *
+	 */
+	if (!select_option_str.empty()) {
+		if ((select_opt_pos = select_option_str.find(delimiter)) != std::string::npos) {
+			show_pos = utils::getInteger(select_option_str.substr(0, select_opt_pos), show_pos);
+			select_option_str.erase(0, select_opt_pos + delimiter.length());
+			show_size = utils::getInteger(select_option_str, show_size);
 		} else {
-			show_pos  = utils::getInteger(option_str, show_pos);
+			show_pos = utils::getInteger(select_option_str, show_pos);
 		}
 	}
-////////
+
+	/**
+	 *	Формирование списка отображаемых таблиц
+	 *
+	 */
 	std::vector<int> table_list;
 	auto add_list_func = [&](std::string in_val) {
 		utils::trim(in_val);
 		if (utils::is_number(in_val)) {
-			table_list.push_back(std::stoi(in));
+			int Integer = utils::getInteger(in, -1);
+			if (Integer > -1) {
+				table_list.push_back(Integer);
+			}
 		}
 	};
 
 	size_t pos = 0;
 	while ((pos = in.find(delimiter)) != std::string::npos) {
-		add_list_func( in.substr(0, pos));
+		add_list_func(in.substr(0, pos));
 		in.erase(0, pos + delimiter.length());
 	}
 	add_list_func(in);
 
 	std::unique_ptr<db::selector> table_request = db_control->getTablesShow(table_list);
 
-	gui::printer show_list(std::cout);
-	show_list.showForm(std::move(table_request->showReport(show_pos, show_size)));
+	gui::printer show_list(std::cout, true);
+	show_list.showForm(
+		std::move(table_request->showReport(show_pos, show_size, show_column_list)),
+		show_pos
+	);
 }
 
 

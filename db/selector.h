@@ -41,7 +41,7 @@ public:
 
 	selector& operator=(const selector &other) = delete;
 	selector& operator=(selector &&other) = delete;
-	std::unique_ptr<gui::OutputForm> showReport(int position, int size);
+	std::unique_ptr<gui::OutputForm> showReport(int position, int size, const std::vector<ssize_t> & show_columns_num);
 };
 
 } /* namespace db */

@@ -69,6 +69,7 @@ inline static const char * SHOW_INFO[] = {
 		"Show data selected tables.",
 		"FORMAT: show {<NUMBER_TABLE_1> ... <NUMBER_TABLE n>|<TABLE_NAME_1> ... <TABLE_NAME_N>}",
 		"             | <START_ROW> <ROW_NAMBERS_LIMIT>",
+		"             | <COLUMN1> ... <COLUMNn> <COLUMN_BEGIN>-<COLUNM_END>",
 		"",
 		nullptr
 };
