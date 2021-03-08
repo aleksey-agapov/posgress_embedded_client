@@ -16,6 +16,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <filesystem>
 #include <cpprest/json.h>                       // JSON library
 #include "../control/Log.h"
 
@@ -53,7 +54,7 @@ public:
 
 class AppConfigControl : protected control::Log {
 	private:
-		inline static std::string file_config;
+		inline static std::string file_config;//std::string(std::filesystem::current_path().c_str()).append("/").append(DEFAULT_CONFIG);
 		inline static json::value base_config;
 		inline static std::map<const char *, IConfigCallBack * > callbackConnection; // std::shared_ptr<IConfigCallBack>
 	protected:
@@ -71,8 +72,8 @@ class AppConfigControl : protected control::Log {
 
 		void RegisterCallback(const char * key, IConfigCallBack * callback); // std::shared_ptr<IConfigCallBack>
 		bool isContainModule (const char * KeyName) const;
-		void LoadNewConfig(const char * FileName);
-		void SaveConfig   (const char * FileName);
+		void LoadNewConfig(const std::string & FileName);
+		void SaveConfig   (const std::string & FileName);
 		void clear() {base_config= json::value::null();}
 
 		void CloseConfig() {callbackConnection.clear();}
@@ -143,8 +144,7 @@ class DbAppConfig final: public AppConfig, public config::IConfigCallBack {
 
 	public:
 		DbAppConfig() :
-				AppConfig(moduleName, int_field_array,
-						sizeof(int_field_array) / sizeof(int_field_array[0]), "DB_ONFIG") {}
+				AppConfig(moduleName, int_field_array, sizeof(int_field_array) / sizeof(int_field_array[0]), "DB_ONFIG") {}
 
 		virtual ~DbAppConfig() {this->UnRegisterCallback(moduleName);}
 
