@@ -7,7 +7,6 @@
 
 #include "AppConfigControl.h"
 #include <fstream>      // std::filebuf
-#include <filesystem>
 #include <sstream>
 #include <utility>
 #include "../db/db_table_class_list.h"
@@ -16,10 +15,10 @@
 
 namespace config {
 
-AppConfigControl::AppConfigControl(std::string file_config, const char * logTag) : control::Log(logTag) {
+AppConfigControl::AppConfigControl(std::string new_file_config, const char * logTag) : control::Log(logTag) {
 	// TODO Auto-generated constructor stub
 	if (base_config.is_null()) {
-		LoadNewConfig(file_config.c_str());
+		LoadNewConfig(new_file_config);
 	}
 }
 
@@ -39,16 +38,20 @@ std::unique_ptr<std::string> AppConfigControl::showTree(const char * config_modu
 
 
 
-void AppConfigControl::LoadNewConfig(const char * FileName) {
+void AppConfigControl::LoadNewConfig(const std::string & FileName) {
 	std::error_code errorCode;
 	std::filebuf fb;
-	file_config.clear();
-	base_config = json::value::object();
-	if (std::filesystem::path(FileName).is_absolute()) {
-		file_config = FileName;
-	} else {
-		file_config.append( std::filesystem::current_path().c_str() ).append("/").append(FileName);
+
+	if (!FileName.empty()) {
+		file_config.clear();
+		base_config = json::value::object();
+		if (std::filesystem::path(FileName).is_absolute()) {
+			file_config = FileName;
+		} else {
+			file_config.append( std::filesystem::current_path().c_str() ).append("/").append(FileName);
+		}
 	}
+
 	if (fb.open(file_config.c_str(), std::ios::in)) {
 		try {
 			msg( "!!!!!!!!!!READ!!!!!!!!!", file_config, "!!!!!!!!!!READ!!!!!!!!!");  //  std::string("!!!!!!!!!!READ!!!!!!!!!").append(file_config).append("!!!!!!!!!!READ!!!!!!!!!").c_str()
@@ -76,26 +79,28 @@ void AppConfigControl::LoadNewConfig(const char * FileName) {
 
 
 
-void AppConfigControl::SaveConfig(const char * FileName) {
+void AppConfigControl::SaveConfig(const std::string & FileName) {
 	std::error_code errorCode;
 	std::filebuf fb;
-	std::string full_path;
 
-	if (std::filesystem::path(FileName).is_absolute()) {
-		full_path = FileName;
-	} else {
-		full_path.append( std::filesystem::current_path().c_str() ).append("/").append(FileName);
+	if (!FileName.empty()) {
+		file_config.clear();
+		if (std::filesystem::path(FileName).is_absolute()) {
+			file_config = FileName;
+		} else {
+			file_config.append( std::filesystem::current_path().c_str() ).append("/").append(FileName);
+		}
 	}
 
-	if (fb.open(full_path.c_str(), std::ios::out)) {
+	if (fb.open(file_config.c_str(), std::ios::out|std::ios::app)) {
 		try {
-			msg(  "!!!!!!!!!!UPDATE!!!!!!!!!" , full_path , "!!!!!!!!!!UPDATE!!!!!!!!!");
+			msg(  "!!!!!!!!!!UPDATE!!!!!!!!!" , file_config , "!!!!!!!!!!UPDATE!!!!!!!!!");
 			utility::ostream_t output(&fb); // = static_cast<utility::istream_t&>(read_config_stream);
 			output << base_config.serialize() << std::endl; // = json::value::se(input, errorCode); // @suppress("Function cannot be resolved") // @suppress("Method cannot be resolved") // @suppress("Invalid overload")
 		} catch (const web::json::json_exception &e) {
-			msg(  "JSON_ERROR:" , std::string(e.what()) );
+			msg(  "JSON_ERROR:" , e.what() );
 		} catch (std::exception &e) {
-			msg(  "ERROR:" , std::string(e.what()) );
+			msg(  "ERROR:" , e.what() );
 			// Return an empty task.
 		}
 
@@ -105,7 +110,7 @@ void AppConfigControl::SaveConfig(const char * FileName) {
 			// Return an empty task.
 		}
 	} else {
-		msg(  "ERROR in write :" , full_path );
+		msg(  "ERROR in write :" , file_config );
 	}
 }
 
@@ -116,7 +121,7 @@ void AppConfigControl::setModuleConfig(const char * section_name, json::value& s
 
 
 void AppConfigControl::SaveDefault() {
-	SaveConfig(file_config.c_str());
+	SaveConfig(file_config);
 }
 
 

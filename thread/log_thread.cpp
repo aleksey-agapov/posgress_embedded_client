@@ -77,16 +77,19 @@ void LogThread::close_log_file() {
 
 void LogThread::SetLogFilePath(std::string FileName) {
 	std::string output_file_name;
-	if (std::filesystem::path(FileName).is_absolute()) {
-		output_file_name = FileName;
-	} else {
-		output_file_name.clear();
-		output_file_name.append( std::filesystem::current_path().c_str() ).append("/").append(FileName);
-	}
-	close_log_file();
-	output_file.open(output_file_name, std::ofstream::out | std::ofstream::app); // текстовый файл для вывода
-	if (!output_file.is_open()) {
-		std::cerr << "Cannot open the file:" << output_file_name << " to output." << std::endl;
+
+	if (!FileName.empty()) {
+		if (std::filesystem::path(FileName).is_absolute()) {
+			output_file_name = FileName;
+		} else {
+			output_file_name.clear();
+			output_file_name.append( std::filesystem::current_path().c_str() ).append("/").append(FileName);
+		}
+		close_log_file();
+		output_file.open(output_file_name, std::ofstream::out | std::ofstream::app); // текстовый файл для вывода
+		if (!output_file.is_open()) {
+			std::cerr << "Cannot open the file:" << output_file_name << " to output." << std::endl;
+		}
 	}
 }
 
@@ -101,7 +104,7 @@ bool LogThread::writeLogMsg(const char *output_str) {
 			output_file << output_str << std::endl;
 			isWrite = true;
 		} catch (std::exception &ex) {
-			std::cerr << "Error of write to log file." << ex.what() << std::endl;
+			std::cerr << "Error of write to log file. " << ex.what() << std::endl;
 		}
 	} else {
 		isWrite = true;

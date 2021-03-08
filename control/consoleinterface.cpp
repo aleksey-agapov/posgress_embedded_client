@@ -85,15 +85,10 @@ void config_operation (std::string& cmd_line){
 	} else {
 		command_string = cmd_line.substr(first_pos + 1);
 		command = cmd_line.substr(0, first_pos);
+		utils::trim(command_string);
 	}
 
 	if (!command_string.empty()) {
-		if (command.compare("load") == 0) {
-			db_config->LoadNewConfig(command_string.c_str());
-		} else
-		if (command.compare("save") == 0) {
-			db_config->SaveConfig(command_string.c_str());
-		} else
 		if (command.compare("edit") == 0) {
 			first_pos = command_string.find(delimiter);
 			if (first_pos != std::string::npos) {
@@ -109,6 +104,13 @@ void config_operation (std::string& cmd_line){
 		if (command.compare("show") == 0) {
 			std::cout << *db_config->showTree(db_config->getModuleName()) << std::endl;
 		}
+	}
+
+	if (command.compare("load") == 0) {
+		db_config->LoadNewConfig(command_string);
+	} else
+	if (command.compare("save") == 0) {
+		db_config->SaveConfig(command_string);
 	}
 }
 /*
@@ -126,6 +128,7 @@ void log_operation (std::string& cmd_line) {
 	} else {
 		command_string = cmd_line.substr(first_pos + 1);
 		command = cmd_line.substr(0, first_pos);
+		utils::trim(command_string);
 	}
 
 	if (!command_string.empty()) {
